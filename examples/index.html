@@ -13,7 +13,7 @@
         min-height: 100%;
         overflow-x: hidden;
         background: #000;
-        color: #f9fafb;
+        color: #ffb076;
         scroll-behavior: smooth;
       }
 
@@ -142,14 +142,14 @@
       }
 
       .brand-name {
-        color: #f9fafb;
+        color: #ffb076;
         font-size: 1rem;
         font-weight: 800;
         line-height: 1.1;
       }
 
       .brand-subtitle {
-        color: #ffb076;
+        color: #ff8a33;
         font-size: 0.76rem;
         font-weight: 600;
         margin-top: 0.15rem;
@@ -172,7 +172,16 @@
       .hero-logo-panel {
         align-items: flex-start;
         display: flex;
+        flex-direction: column;
         justify-content: flex-end;
+      }
+
+      .hero-logo-link {
+        display: block;
+        margin-left: auto;
+        max-width: min(360px, 100%);
+        text-decoration: none;
+        width: 100%;
       }
 
       .hero-logo {
@@ -182,9 +191,42 @@
         box-shadow:
           0 0 28px rgba(255, 107, 0, 0.22),
           0 0 80px rgba(255, 60, 0, 0.14);
-        max-width: min(360px, 100%);
         object-fit: cover;
         width: 100%;
+      }
+
+      .hero-site-link {
+        align-self: flex-end;
+        animation: siteLinkPulse 2.4s ease-in-out infinite;
+        color: #ff9b45;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        margin-top: 0.24rem;
+        text-align: center;
+        text-decoration: none;
+        text-shadow:
+          0 0 10px rgba(255, 107, 0, 0.5),
+          0 0 22px rgba(255, 107, 0, 0.22);
+        width: min(360px, 100%);
+      }
+
+      .hero-site-link:hover {
+        color: #ffc08a;
+        text-shadow:
+          0 0 14px rgba(255, 107, 0, 0.72),
+          0 0 28px rgba(255, 107, 0, 0.32);
+      }
+
+      @keyframes siteLinkPulse {
+        0%,
+        100% {
+          opacity: 0.74;
+        }
+
+        50% {
+          opacity: 1;
+        }
       }
 
       .top-links {
@@ -385,8 +427,18 @@
           justify-content: flex-start;
         }
 
+        .hero-logo-link {
+          margin-left: 0;
+          max-width: 220px;
+        }
+
         .hero-logo {
           max-width: 220px;
+        }
+
+        .hero-site-link {
+          align-self: flex-start;
+          width: min(220px, 100%);
         }
       }
     </style>
@@ -399,7 +451,7 @@
           <div class="hero">
             <div class="hero-copy">
               <div class="topbar">
-                <a class="brand-lockup" href="https://nuggies.website/">
+                <a class="brand-lockup" href="https://nuggies.website/" target="_blank" rel="noopener noreferrer">
                   <img class="brand-logo" src="../hangrylabs/favicon_small.png" alt="Hangry Labs logo">
                   <div>
                     <div class="brand-name">Hangry Labs</div>
@@ -427,14 +479,17 @@
               <h1 class="brand-glow max-w-4xl text-4xl font-extrabold leading-none sm:text-6xl">
                 Voice examples
               </h1>
-              <p class="mt-5 max-w-3xl text-base leading-7 text-gray-300 sm:text-lg">
+              <p class="mt-5 max-w-3xl text-base leading-7 text-[#ffb076] sm:text-lg">
                 Easy-run text-to-speech Docker images with a browser UI and HTTP API.
                 These samples show the voices people will hear before they decide to run
                 the container or connect it to an application.
               </p>
             </div>
             <div class="hero-logo-panel" aria-hidden="true">
-              <img class="hero-logo" src="../hangrylabs/logo_small.png" alt="">
+              <a class="hero-logo-link" href="https://nuggies.website/" target="_blank" rel="noopener noreferrer" tabindex="-1">
+                <img class="hero-logo" src="../hangrylabs/logo_small.png" alt="">
+              </a>
+              <a class="hero-site-link" href="https://nuggies.website/" target="_blank" rel="noopener noreferrer">nuggies.website</a>
             </div>
           </div>
         </header>
