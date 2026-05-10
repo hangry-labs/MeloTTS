@@ -1,10 +1,14 @@
-<p><img src="logo.png" alt="MeloTTS logo"></p>
+<p>
+  <a href="https://nuggies.website/">
+    <img src="logo.png" alt="Hangry Labs Melo T T S logo">
+  </a>
+</p>
 
-# MeloTTS — Maintained & Easy-to-Use Fork 🛠️
+# Hangry Labs Melo T T S
 
 Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
 
-This fork is made for ease of use. The aim is that anyone should be able to run text to speech without friction: a person trying it at home, a developer wiring it into an app, or a professional evaluating it for a production environment. Install Docker, run one command from Quick Start, open the local link, and start generating speech.
+This Hangry Labs fork is made for ease of use. The aim is that anyone should be able to run text to speech without friction: a person trying it at home, a developer wiring it into an app, or a professional evaluating it for a production environment. Install Docker, run one command from Quick Start, open the local link, and start generating speech.
 
 You get:
 - A browser UI for manual text-to-speech generation
@@ -13,11 +17,15 @@ You get:
 - Full multilingual images and smaller EN-focused images
 - Offline-friendly usage: download an image once, keep it, and run it later without relying on live model downloads
 
-Official Docker images are published here: [sensejworld/melotts on Docker Hub](https://hub.docker.com/r/sensejworld/melotts/tags).
+Official Docker images are published here: [hangrylabs/melotts on Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags).
+
+Voice examples are available here: [hangry-labs.github.io/MeloTTS/examples](https://hangry-labs.github.io/MeloTTS/examples/).
+
+Hangry Labs home: [nuggies.website](https://nuggies.website/).
 
 ---
 
-## 🔊 Voice Examples
+## Voice Examples
 
 Preview MP3 samples from the full multilingual image:
 
@@ -43,29 +51,29 @@ GitHub does not render embedded audio players directly in README files, so direc
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest
 ```
 
 EN-focused build (smaller target image):
 
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_en
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest_en
 ```
 
 Run on a specific GPU (example: GPU index `1`):
 
 ```bash
-docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:latest
+docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts:latest
 ```
 
 Then open: **[http://localhost:8888](http://localhost:8888)**
 
 ---
 
-## 🌐 API Usage Example
+## API Usage Example
 
 ```bash
 curl -X POST "http://localhost:8888/tts/convert/tts" \
@@ -89,12 +97,12 @@ The web UI defaults to MP3 downloads because it is a more practical size for int
 
 ---
 
-## ℹ️ About This Fork
+## About This Fork
 
 This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).
 The original work is licensed under the MIT License, and we thank the authors for their excellent research and contributions.
 
-While the original MeloTTS is an impressive research project, this fork focuses on making it simple to run and integrate: Docker image, included UI, and API support out of the box.
+While the original MeloTTS is an impressive research project, this Hangry Labs fork focuses on making it simple to run and integrate: Docker image, included UI, and API support out of the box.
 
 License and attribution are preserved in [`LICENSE`](LICENSE). The original MeloTTS copyright remains with MyShell.ai; this fork adds separate Hangry Labs copyright for the Docker packaging, Web UI/API integration, documentation, release tooling, and other modifications.
 
@@ -102,15 +110,15 @@ License and attribution are preserved in [`LICENSE`](LICENSE). The original Melo
 
 ✅ **Offline Mode:** Supported when models are baked into the Docker image or mounted through a volume.
 
-## 🆘 Support & Issues
-If you encounter bugs, have feature requests, or need help using MeloTTS:
+## Support & Issues
+If you encounter bugs, have feature requests, or need help using Hangry Labs Melo T T S:
 - Please open a new [GitHub Issue](https://github.com/hangry-labs/MeloTTS/issues) with as much detail as possible
 - Include error messages, logs, and reproduction steps if applicable
 - For general questions or ideas, you can also use the [Discussions](https://github.com/hangry-labs/MeloTTS/discussions) tab
 
 ---
 
-## 📦 Docker Features
+## Docker Features
 - Pinned dependencies for reproducible builds
 - Preloaded models for instant offline use (optional)
 - GPU acceleration when available
@@ -119,8 +127,8 @@ If you encounter bugs, have feature requests, or need help using MeloTTS:
 
 ---
 
-## 🐳 Docker Hub
-You can explore all available MeloTTS container images on [Docker Hub](https://hub.docker.com/r/sensejworld/melotts/tags).
+## Docker Hub
+You can explore all available Hangry Labs Melo T T S container images on [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags).
 
 This is useful if you want to:
 - Select a specific version of MeloTTS for compatibility
@@ -153,9 +161,9 @@ Current tag pattern:
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
   ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.8_en
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.8
-  docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.8_en
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8_en
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8
+  docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts:v0.0.8_en
   ```
 
 
@@ -176,11 +184,11 @@ Current tag pattern:
 - Split Docker release flow into EN and FULL image tracks/workflows (`<version>_en`, `<version>`) to improve build/release flexibility.
 - Run with:
   ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_en
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7
-  docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.7_en
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.7_en
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.7
+  docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts:v0.0.7_en
   ```
-  https://hub.docker.com/r/sensejworld/melotts
+  https://hub.docker.com/r/hangrylabs/melotts
 
 ### v0.0.6 (27.03.2026)
 - Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).
@@ -189,7 +197,7 @@ Current tag pattern:
 - Improved build resilience for model preloading during Docker image creation.
 - Run with:
   ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.6
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.6
   ```
 
 ### v0.0.5 (27.03.2026)
@@ -201,7 +209,7 @@ Current tag pattern:
 - Updated release planning: V2/V3 scope completed; deferred separate base-repo split plan.
 - Run with:
   ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.5
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.5
   ```
 
 ### v0.0.4 (09.08.2025)
@@ -211,7 +219,7 @@ Current tag pattern:
 - **Smaller image size** via optimized multi-stage Docker build.
 - Run with:
   ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.4
 
 ### v0.0.3 (25.07.2025)
 - Optimized docker build to use layer caching so we can build stuff fast after the initial build
@@ -222,22 +230,22 @@ Current tag pattern:
 - Updated documentation
 - Run with:
   ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.3`
 
 ### v0.0.2 (22.06.2025)
 - Enable API calls together with UI
 - run with
   ```bash 
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.2`
 - run for english only
     ```bash 
-    docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
+    docker run -p 8888:8888 -e TTS_LANGUAGES=EN hangrylabs/melotts:v0.0.2`
 - run for english and japanese
     ```bash 
-    docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
+    docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP hangrylabs/melotts:v0.0.2`
 - run for english with gpu support named melotts_gpu_en
     ```bash 
-    docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
+    docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en hangrylabs/melotts:v0.0.2`
 
 ### v0.0.1 (21.06.2025)
 - Initial release
@@ -247,7 +255,7 @@ Current tag pattern:
 - Web interface on port 8888 (http://localhost:8888/)
 - Run with
   ```bash 
-  docker pull sensejworld/melotts:v0.0.1`
+  docker pull hangrylabs/melotts:v0.0.1`
 
 ---
 

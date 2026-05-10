@@ -1,209 +1,112 @@
-# 🗣️ MeloTTS WebUI & API (Docker)
+<p>
+  <a href="https://hangry-labs.github.io/MeloTTS/examples/">
+    <img src="https://github.com/hangry-labs/MeloTTS/raw/main/logo.png" alt="Hangry Labs Melo T T S logo">
+  </a>
+</p>
 
-This is an [independently maintained fork](https://github.com/hangry-labs/MeloTTS) of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
+# Hangry Labs Melo T T S
 
-## ✅ Features
-- Multilingual TTS: EN, ES, FR, ZH, JP, KR
-- Web interface on `/`
-- HTTP API on `/tts/convert/tts`
-- Docker-ready for local or cloud use
-- GPU acceleration when available
-- Optional offline mode with preloaded models
+Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
 
-## 🚀 Quick Start
-**CPU:**
+This Hangry Labs fork is built for people who want text to speech to work without a long setup. Install Docker, run one command, open the local UI, or call the API from your own application.
+
+## Listen First
+
+Voice examples are available here:
+
+https://hangry-labs.github.io/MeloTTS/examples/
+
+The examples page includes MP3 previews for the main English voices plus Spanish, French, Chinese, Japanese, and Korean.
+
+## Project Links
+
+- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
+- GitHub repository: https://github.com/hangry-labs/MeloTTS
+- Issues and support: https://github.com/hangry-labs/MeloTTS/issues
+- Hangry Labs: https://nuggies.website/
+
+## Quick Start
+
+Full multilingual image:
+
 ```bash
-docker run -p 8888:8888 sensejworld/melotts
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest
 ```
 
-**NVIDIA GPU:**
+EN-focused image:
+
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest_en
 ```
 
-**EN-focused image (smaller target image):**
-```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_en
-```
+Then open:
 
-**Specific GPU (example: GPU index `1`):**
-```bash
-docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts
-```
+http://localhost:8888
 
-**English only:**
-```bash
-docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN sensejworld/melotts
-```
+The container includes the web UI and the HTTP API on the same port.
 
-Visit: [http://localhost:8888](http://localhost:8888) for the UI.  
-*(First synthesis may take up to 1 minute — after that, it's very fast.)*
+## What You Get
 
-### 📡 API Usage Examples
-**Simple:**
+- Browser UI for manual text-to-speech generation
+- HTTP API for applications and automation
+- MP3 output from the UI by default
+- Backward-compatible WAV API responses unless `format` is requested
+- Full multilingual image and smaller EN-focused image
+- GPU support when Docker/NVIDIA support is available
+- Offline-friendly usage once the image and baked model assets are available locally
+
+## API Example
+
+Default API behavior returns WAV for backward compatibility:
+
 ```bash
 curl -X POST "http://localhost:8888/tts/convert/tts" ^
   -H "Content-Type: application/json" ^
-  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  -d "{\"text\":\"Hello from Hangry Labs Melo T T S\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
   -o hello.wav
 ```
 
-Omitting `format` keeps the original WAV response. Add `format` when a smaller file is preferred:
+Request MP3 when you want compact output:
 
 ```bash
 curl -X POST "http://localhost:8888/tts/convert/tts" ^
   -H "Content-Type: application/json" ^
-  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
+  -d "{\"text\":\"Hello from Hangry Labs Melo T T S\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
   -o hello.mp3
 ```
 
-Supported response formats are listed by `GET /tts/formats`.
-The web UI defaults to MP3 downloads. The API keeps WAV as the default unless `format` is provided.
+Supported formats are listed by:
 
-**Advanced:**
 ```bash
-curl -v -X POST http://localhost:8888/tts/convert/tts ^
-  -H "Content-Type: application/json" ^
-  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":\"0.21\",\"noise_scale\":\"0.61\",\"noise_scale_w\":\"0.81\"}" ^
-  --output hello.wav
+curl http://localhost:8888/tts/formats
 ```
 
+## Image Tags
 
-## 🆘 Support & Issues
-If you encounter a bug, have a feature request, or want to contribute:
-- 📄 Open a **[GitHub Issue](https://github.com/hangry-labs/MeloTTS/issues)** with full details (logs, commands used, reproduction steps)
-- 💬 Start a discussion in the **[GitHub Discussions](https://github.com/hangry-labs/MeloTTS/discussions)** tab for ideas or questions
-- 🛠 Check **[Known Issues](https://github.com/hangry-labs/MeloTTS/issues?q=is%3Aissue+is%3Aopen+label%3Abug)** before reporting
-
-I respond fastest on GitHub — Docker Hub comments aren’t monitored regularly.
-
-### 🔗 Common Help Topics
-- **[ReadMe](https://github.com/hangry-labs/MeloTTS/blob/main/README.md)**
-- **[Technical Readme](https://github.com/hangry-labs/MeloTTS/blob/main/docs/notes.md)**
-
-
-## 📦 Docker Hub Tags
-View all available builds: [sensejworld/melotts — Tags](https://hub.docker.com/r/sensejworld/melotts/tags)
-
-Main tag strategy:
-- EN-focused image: `latest_en`, `<version>_en`
 - Full multilingual image: `latest`, `<version>`
+- EN-focused image: `latest_en`, `<version>_en`
 
+Example release tags:
 
----
+```bash
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8_en
+```
 
-## 📜 Version History
+## Links
 
-### v0.0.8 (10.05.2026)
-- Scope: runtime-focused cleanup for the Docker UI/API fork.
-- Removed unused upstream training surfaces, including training scripts/modules, training example data, legacy script-style package tests, and original upstream docs that no longer matched this fork.
-- Trimmed runtime helper code by reducing `melo/utils.py` to inference text preparation, config loading, and `HParams`.
-- Removed stale phonemizer generation artifacts and notebook files that were not read by runtime synthesis.
-- Cleaned stale imports, unused locals, and unreachable flow-layer code found by lint checks.
-- Improved Taskfile API readiness checks by retrying transient startup errors such as `Empty reply from server`.
-- Reworked the UI into a Kokoro-style Gradio layout while keeping MeloTTS language, speaker, preset, and advanced synthesis controls.
-- Added text metrics, per-language random quotes, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, favicon/brand icon, and richer API documentation links.
-- Added `/tts/status`, `/tts/defaults`, `/tts/voices`, `/tts/metrics`, and `/tts/purge` endpoints for the new UI and companion integrations.
-- Added backward-compatible optional API output formats: default WAV plus MP3, FLAC, and Ogg Vorbis via `format`, with discovery at `/tts/formats`.
-- Added an output format selector to the Gradio UI; the UI defaults to MP3 while the API remains WAV-by-default for old clients.
-- Modernized the runtime dependency stack using `requirements.in` + resolved pins in `requirements.txt`; key validated versions include `gradio==6.14.0`, `fastapi==0.136.1`, `starlette==1.0.0`, `pydantic==2.13.4`, `torch==2.11.0`, `torchaudio==2.11.0`, `transformers==5.8.0`, `numpy==2.2.6`, and `soundfile==0.13.1`.
-- Normalized package metadata versioning in `setup.py` so display versions like `v0.0.8-SNAPSHOT` install as valid Python package versions such as `0.0.8.dev0`.
-- Added `task release` backed by the root snapshot `VERSION` file, and corrected Docker release tags so the full image publishes as `<version>` while the EN-focused image publishes as `<version>_en`.
-- Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
-- Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
+- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
+- GitHub: https://github.com/hangry-labs/MeloTTS
+- Hangry Labs: https://nuggies.website/
+- Issues: https://github.com/hangry-labs/MeloTTS/issues
+- Discussions: https://github.com/hangry-labs/MeloTTS/discussions
 
-### v0.0.7 (29.03.2026)
-- Upgraded Docker runtime/build baseline to Python 3.10 (`python:3.10-slim`) and aligned packaging with `python_requires>=3.10`.
-- Reworked app versioning/build metadata:
-  - Root `VERSION` file is now the single version source of truth.
-  - Build metadata is generated at image build time (no hardcoded `BUILD_ID`) and exposed in UI/API.
-- Upgraded web stack to newer compatible releases: `gradio==4.44.1`, `gradio-client==1.3.0`, `fastapi==0.115.12`, `starlette==0.46.2`, `typer==0.12.5`.
-- Applied large dependency/security refresh with pinned versions for reproducible builds, including network/security-sensitive packages such as `requests==2.32.4`, `urllib3==2.3.0`, `certifi==2025.6.15`, plus broad runtime library updates.
-- Added/kept compatibility guardrails for stability:
-  - `markupsafe` remains on 2.x for Gradio compatibility.
-  - `huggingface-hub==0.21.4` and `filelock==3.13.1` remain constrained by `cached-path==1.6.2`.
-- Improved offline reliability and startup resilience:
-  - Build-time preload profiles (`EN_ONLY` / `FULL`) with retry + strict/non-strict controls.
-  - NLTK resources required for EN synthesis (including `averaged_perceptron_tagger_eng` and `cmudict`) are preloaded during image build for offline-ready runs.
-- Fixed Gradio 4.x UI regressions after upgrades (language/speaker loading + synth output compatibility) while keeping API behavior stable.
-- Split Docker release flow into EN and FULL image tracks/workflows (`<version>_en`, `<version>`) to improve build/release flexibility.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_en
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7
-  docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.7_en
-  ```
+Docker Hub comments are not monitored regularly. GitHub Issues are the best place to report bugs.
 
-### v0.0.6 (27.03.2026)
-- Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).
-- Added working RTX 50-series (`sm_120`) support in the Docker setup.
-- Added GPU selection support for Docker runs, so you can choose which GPU to use.
-- Improved build resilience for model preloading during Docker image creation.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.6
-  ```
+## Attribution
 
-### v0.0.5 (27.03.2026)
-- Added more English model options (including V2 and V3 variants).
-- Added UI tabs for `UI Playground` and `API Docs`.
-- Added build/version badge in UI (top-right) via `APP_VERSION` and `BUILD_ID`.
-- Added memory management in UI (`Purge others`) to release non-selected language models.
-- Improved API documentation visibility directly inside the app (`/` -> API Docs tab + `/tts/docs`).
-- Updated release planning: V2/V3 scope completed; deferred separate base-repo split plan.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.5
-  ```
+This is an independently maintained fork of the original MeloTTS project by Wenliang Zhao, Xumin Yu, and Zengyi Qin:
 
-### v0.0.4 (09.08.2025)
-- **Dependency updates** for improved performance and stability.
-- **Full offline support** — all required models are now baked into the image.
-- **Model overwrite option**: set `MELOTTTS_MODELS` to point to your custom model folder.
-- **Smaller image size** via optimized multi-stage Docker build.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4
+https://github.com/myshell-ai/MeloTTS
 
-### v0.0.3 (25.07.2025)
-- Optimized docker build to use layer caching so we can build stuff fast after the initial build
-- Expanded ping to include version and build
-- Expanded UI with sdp_ratio, noise_scale and noise_scale_w
-- Expanded API with sdp_ratio, noise_scale and noise_scale_w
-- Corrected faulty version dates
-- Updated documentation
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
-
-### v0.0.2 (22.06.2025)
-- Enable API calls together with UI
-- run with
-  ```bash 
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
-- run for english only
-    ```bash 
-    docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
-- run for english and japanese
-    ```bash 
-    docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
-- run for english with gpu support named melotts_gpu_en
-    ```bash 
-    docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
-
-### v0.0.1 (21.06.2025)
-- Initial release
-- Basic TTS functionality
-- Support for English (Default, US, BR, India, AU)
-- Docker support for both CPU and GPU
-- Web interface on port 8888 (http://localhost:8888/)
-- Run with
-  ```bash 
-  docker pull sensejworld/melotts:v0.0.1`
-
----
-
-
-## 📜 License
-This fork is licensed under the MIT License.  
-Original work by Wenliang Zhao, Xumin Yu, and Zengyi Qin in [MeloTTS](https://github.com/myshell-ai/MeloTTS).
+License and attribution are preserved in the repository. Original MeloTTS copyright remains with MyShell.ai; Hangry Labs maintains the Docker packaging, Web UI/API integration, examples page, documentation, release tooling, and other modifications in this fork.

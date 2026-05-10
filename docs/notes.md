@@ -1,4 +1,11 @@
-# Development Notes
+# Hangry Labs Melo T T S Development Notes
+
+Main project links:
+
+- GitHub: https://github.com/hangry-labs/MeloTTS
+- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
+- Docker Hub: https://hub.docker.com/r/hangrylabs/melotts/tags
+- Hangry Labs: https://nuggies.website/
 
 ##Tools
 
@@ -10,10 +17,10 @@
 
 ## Docker Usage
 ### CPU Version
-`docker run -p 8888:8888 sensejworld/melotts`
+`docker run -p 8888:8888 hangrylabs/melotts`
 
 ### GPU Version
-`docker run --gpus all -p 8888:8888 sensejworld/melotts`
+`docker run --gpus all -p 8888:8888 hangrylabs/melotts`
 
 ## Test locally
 
@@ -31,7 +38,7 @@ You need docker to be working. (Example : Docker Desktop)
 `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN melotts:test`
 
 ### Investigate image without running it (Used to slim the image and see files)
-`docker run -it --rm --entrypoint bash sensejworld/melotts:latest`
+`docker run -it --rm --entrypoint bash hangrylabs/melotts:latest`
 
 ### Check UI
 Open http://localhost:8888
