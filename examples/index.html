@@ -101,7 +101,7 @@
         display: flex;
         gap: 1rem;
         justify-content: space-between;
-        margin-bottom: 2rem;
+        margin-bottom: 1.35rem;
         padding: 0.75rem;
       }
 
@@ -136,14 +136,21 @@
       }
 
       .hero {
-        align-items: center;
+        align-items: start;
         display: grid;
         gap: 2rem;
         grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.72fr);
       }
 
+      .hero-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        min-width: 0;
+      }
+
       .hero-logo-panel {
-        align-items: center;
+        align-items: flex-start;
         display: flex;
         justify-content: flex-end;
       }
@@ -258,6 +265,7 @@
         .topbar {
           align-items: flex-start;
           flex-direction: column;
+          margin-bottom: 1rem;
         }
 
         .top-links {
@@ -294,22 +302,22 @@
     <main class="page-shell">
       <section class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <header class="mb-8 pt-4 sm:pt-8">
-          <div class="topbar">
-            <div class="brand-lockup">
-              <img class="brand-logo" src="../hangrylabs/favicon_small.png" alt="Hangry Labs logo">
-              <div>
-                <div class="brand-name">Hangry Labs</div>
-                <div class="brand-subtitle">Useful AI tools, easy to run</div>
-              </div>
-            </div>
-            <nav class="top-links" aria-label="Project links">
-              <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="../">README</a>
-              <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://hub.docker.com/r/sensejworld/melotts/tags">Docker Hub</a>
-              <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://github.com/hangry-labs/MeloTTS">GitHub</a>
-            </nav>
-          </div>
           <div class="hero">
-            <div>
+            <div class="hero-copy">
+              <div class="topbar">
+                <div class="brand-lockup">
+                  <img class="brand-logo" src="../hangrylabs/favicon_small.png" alt="Hangry Labs logo">
+                  <div>
+                    <div class="brand-name">Hangry Labs</div>
+                    <div class="brand-subtitle">Useful AI tools, easy to run</div>
+                  </div>
+                </div>
+                <nav class="top-links" aria-label="Project links">
+                  <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="../">README</a>
+                  <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://hub.docker.com/r/sensejworld/melotts/tags">Docker Hub</a>
+                  <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://github.com/hangry-labs/MeloTTS">GitHub</a>
+                </nav>
+              </div>
               <h1 class="brand-glow max-w-4xl text-4xl font-extrabold leading-none sm:text-6xl">
                 Voice examples
               </h1>
