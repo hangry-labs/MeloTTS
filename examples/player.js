@@ -1,4 +1,10 @@
 const players = Array.from(document.querySelectorAll(".brand-card audio"));
+const volumeButton = document.querySelector(".volume-button");
+const volumeSlider = document.querySelector(".volume-slider");
+const volumeIconOn = document.querySelector(".volume-icon-on");
+const volumeIconMuted = document.querySelector(".volume-icon-muted");
+let currentVolume = Number.parseFloat(volumeSlider?.value || "0.85");
+let lastVolume = currentVolume > 0 ? currentVolume : 0.85;
 
 function formatTime(value) {
   if (!Number.isFinite(value)) {
@@ -18,9 +24,60 @@ function pauseOthers(currentAudio) {
   });
 }
 
+function updateVolumeControl() {
+  const isMuted = currentVolume <= 0.001;
+
+  players.forEach((audio) => {
+    audio.volume = currentVolume;
+    audio.muted = isMuted;
+  });
+
+  if (volumeSlider) {
+    volumeSlider.value = currentVolume.toString();
+  }
+
+  if (volumeButton) {
+    volumeButton.dataset.muted = isMuted.toString();
+    volumeButton.setAttribute("aria-label", isMuted ? "Unmute audio" : "Mute audio");
+  }
+
+  if (volumeIconOn && volumeIconMuted) {
+    volumeIconOn.hidden = isMuted;
+    volumeIconMuted.hidden = !isMuted;
+    volumeIconOn.style.display = isMuted ? "none" : "block";
+    volumeIconMuted.style.display = isMuted ? "block" : "none";
+  }
+}
+
+if (volumeSlider) {
+  volumeSlider.addEventListener("input", () => {
+    currentVolume = Number.parseFloat(volumeSlider.value);
+
+    if (currentVolume > 0) {
+      lastVolume = currentVolume;
+    }
+
+    updateVolumeControl();
+  });
+}
+
+if (volumeButton) {
+  volumeButton.addEventListener("click", () => {
+    if (currentVolume > 0) {
+      lastVolume = currentVolume;
+      currentVolume = 0;
+    } else {
+      currentVolume = lastVolume || 0.85;
+    }
+
+    updateVolumeControl();
+  });
+}
+
 players.forEach((audio) => {
   const card = audio.closest(".brand-card");
 
+  audio.volume = currentVolume;
   audio.removeAttribute("controls");
   if (audio.nextElementSibling && audio.nextElementSibling.classList.contains("player")) {
     return;
@@ -152,3 +209,5 @@ players.forEach((audio) => {
     }
   });
 });
+
+updateVolumeControl();
