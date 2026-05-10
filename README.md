@@ -27,9 +27,14 @@ GitHub does not render embedded audio players directly in README files, so direc
 
 | Language | Sample |
 | --- | --- |
-| English | [Listen to MP3](examples/melotts-en.mp3) |
-| English v2 | [Listen to MP3](examples/melotts-en-v2.mp3) |
+| English British | [Listen to MP3](examples/melotts-en-br.mp3) |
 | English newest | [Listen to MP3](examples/melotts-en-newest.mp3) |
+| English v2 | [Listen to MP3](examples/melotts-en-v2.mp3) |
+| English | [Listen to MP3](examples/melotts-en.mp3) |
+| English Indian | [Listen to MP3](examples/melotts-en-india.mp3) |
+| English Australian | [Listen to MP3](examples/melotts-en-au.mp3) |
+| English American | [Listen to MP3](examples/melotts-en-us.mp3) |
+| English default | [Listen to MP3](examples/melotts-en-default.mp3) |
 | Spanish | [Listen to MP3](examples/melotts-es.mp3) |
 | French | [Listen to MP3](examples/melotts-fr.mp3) |
 | Chinese | [Listen to MP3](examples/melotts-zh.mp3) |

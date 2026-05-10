@@ -3,140 +3,437 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MeloTTS Voice Examples</title>
+    <title>MeloTTS Voice Examples | Hangry Labs</title>
+    <link rel="icon" type="image/png" href="../hangrylabs/favicon_small.png">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #0f172a;
-        --panel: #111827;
-        --text: #f8fafc;
-        --muted: #cbd5e1;
-        --line: #334155;
-        --accent: #38bdf8;
-      }
-
+      html,
       body {
         margin: 0;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          sans-serif;
-        background: var(--bg);
-        color: var(--text);
+        min-height: 100%;
+        overflow-x: hidden;
+        background: #000;
+        color: #f9fafb;
+        scroll-behavior: smooth;
       }
 
-      main {
-        width: min(940px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 40px 0 56px;
+      canvas {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
       }
 
-      header {
-        margin-bottom: 28px;
+      .page-shell {
+        position: relative;
+        z-index: 10;
+        min-height: 100vh;
+        background: rgba(0, 0, 0, 0.42);
       }
 
-      h1 {
-        margin: 0 0 10px;
-        font-size: clamp(2rem, 5vw, 3.5rem);
-        line-height: 1;
+      .brand-card {
+        background: rgba(20, 20, 20, 0.94);
+        border: 2px solid rgba(255, 107, 0, 0.3);
+        border-radius: 12px;
+        box-shadow: 0 0 28px rgba(255, 107, 0, 0.12);
+        cursor: pointer;
+        transition:
+          border-color 0.25s ease,
+          box-shadow 0.25s ease,
+          transform 0.25s ease;
       }
 
-      p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 1rem;
-        line-height: 1.6;
+      .brand-card:hover {
+        border-color: #ff6b00;
+        box-shadow: 0 0 24px rgba(255, 107, 0, 0.34);
+        transform: translateY(-3px);
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 14px;
+      .brand-card:focus-visible {
+        border-color: #ff8a33;
+        box-shadow:
+          0 0 0 3px rgba(255, 107, 0, 0.28),
+          0 0 28px rgba(255, 107, 0, 0.42);
+        outline: none;
       }
 
-      .sample {
-        border: 1px solid var(--line);
+      .brand-card.is-playing {
+        animation: cardPulse 1.4s ease-in-out infinite;
+        border-color: #ff6b00;
+      }
+
+      @keyframes cardPulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 18px rgba(255, 107, 0, 0.28),
+            0 0 42px rgba(255, 107, 0, 0.12);
+        }
+
+        50% {
+          box-shadow:
+            0 0 28px rgba(255, 107, 0, 0.5),
+            0 0 68px rgba(255, 107, 0, 0.2);
+        }
+      }
+
+      .brand-glow {
+        color: #ff6b00;
+        text-shadow:
+          0 0 20px rgba(255, 107, 0, 0.62),
+          0 0 48px rgba(255, 60, 0, 0.28);
+      }
+
+      .pill {
+        border: 1px solid rgba(255, 107, 0, 0.42);
+        background: rgba(255, 107, 0, 0.12);
+        border-radius: 999px;
+        color: #ffb076;
+      }
+
+      .topbar {
+        align-items: center;
+        background: rgba(10, 10, 10, 0.86);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 107, 0, 0.26);
+        border-radius: 12px;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding: 0.75rem;
+      }
+
+      .brand-lockup {
+        align-items: center;
+        display: flex;
+        gap: 0.85rem;
+        min-width: 0;
+      }
+
+      .brand-logo {
+        border: 1px solid rgba(255, 107, 0, 0.36);
         border-radius: 8px;
-        background: var(--panel);
-        padding: 16px;
+        box-shadow: 0 0 20px rgba(255, 107, 0, 0.22);
+        height: 3rem;
+        object-fit: cover;
+        width: 3rem;
       }
 
-      .sample h2 {
-        margin: 0 0 12px;
-        font-size: 1.05rem;
+      .brand-name {
+        color: #f9fafb;
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .brand-subtitle {
+        color: #ffb076;
+        font-size: 0.76rem;
+        font-weight: 600;
+        margin-top: 0.15rem;
+      }
+
+      .hero {
+        align-items: center;
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.72fr);
+      }
+
+      .hero-logo-panel {
+        align-items: center;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .hero-logo {
+        aspect-ratio: 1 / 1;
+        border: 2px solid rgba(255, 107, 0, 0.3);
+        border-radius: 18px;
+        box-shadow:
+          0 0 28px rgba(255, 107, 0, 0.22),
+          0 0 80px rgba(255, 60, 0, 0.14);
+        max-width: min(360px, 100%);
+        object-fit: cover;
+        width: 100%;
+      }
+
+      .top-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: flex-end;
       }
 
       audio {
-        width: 100%;
-        display: block;
+        display: none;
       }
 
-      .links {
-        margin-top: 28px;
+      .player {
+        align-items: center;
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .progress-button {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        min-width: 0;
+        padding: 0.75rem 0;
+        touch-action: none;
+        user-select: none;
+        width: 100%;
+      }
+
+      .progress-button:focus-visible {
+        outline: 2px solid rgba(255, 107, 0, 0.8);
+        outline-offset: 4px;
+      }
+
+      .progress-track {
+        align-items: center;
+        background: rgba(255, 107, 0, 0.16);
+        border: 1px solid rgba(255, 107, 0, 0.3);
+        border-radius: 999px;
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
         display: flex;
-        gap: 14px;
-        flex-wrap: wrap;
+        height: 0.56rem;
+        overflow: visible;
+        position: relative;
+        width: 100%;
+      }
+
+      .progress-fill {
+        background: linear-gradient(90deg, #ff6b00, #ff9b45);
+        border-radius: inherit;
+        box-shadow: 0 0 14px rgba(255, 107, 0, 0.55);
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0;
+        transition: width 0.08s linear;
+        width: 0;
+      }
+
+      .progress-knob {
+        background: #ff6b00;
+        border: 2px solid #ffc08a;
+        border-radius: 999px;
+        box-shadow:
+          0 0 8px rgba(255, 107, 0, 0.7),
+          0 0 16px rgba(255, 107, 0, 0.28);
+        height: 1rem;
+        left: 0;
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        transition: left 0.08s linear;
+        width: 1rem;
+        z-index: 2;
+      }
+
+      .duration {
+        color: #ffb076;
+        font-family: "Courier New", monospace;
+        font-size: 0.78rem;
+        min-width: 4.4rem;
+        text-align: right;
       }
 
       a {
-        color: var(--accent);
+        color: #ff6b00;
+      }
+
+      a:hover {
+        color: #ff8a33;
+        text-shadow: 0 0 12px rgba(255, 107, 0, 0.42);
+      }
+
+      @media (max-width: 720px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .top-links {
+          justify-content: flex-start;
+          width: 100%;
+        }
+
+        .player {
+          grid-template-columns: 1fr;
+        }
+
+        .duration {
+          text-align: left;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-logo-panel {
+          justify-content: flex-start;
+        }
+
+        .hero-logo {
+          max-width: 220px;
+        }
       }
     </style>
   </head>
   <body>
-    <main>
-      <header>
-        <h1>MeloTTS Voice Examples</h1>
-        <p>
-          Multilingual MP3 samples generated with the MeloTTS Docker image.
-          The image includes a browser UI and HTTP API, so you can try it
-          manually or connect it to your own application.
-        </p>
-      </header>
+    <canvas id="shapes" aria-hidden="true"></canvas>
+    <main class="page-shell">
+      <section class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-8 sm:px-6 lg:px-8">
+        <header class="mb-8 pt-4 sm:pt-8">
+          <div class="topbar">
+            <div class="brand-lockup">
+              <img class="brand-logo" src="../hangrylabs/favicon_small.png" alt="Hangry Labs logo">
+              <div>
+                <div class="brand-name">Hangry Labs</div>
+                <div class="brand-subtitle">Useful AI tools, easy to run</div>
+              </div>
+            </div>
+            <nav class="top-links" aria-label="Project links">
+              <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="../">README</a>
+              <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://hub.docker.com/r/sensejworld/melotts/tags">Docker Hub</a>
+              <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://github.com/hangry-labs/MeloTTS">GitHub</a>
+            </nav>
+          </div>
+          <div class="hero">
+            <div>
+              <h1 class="brand-glow max-w-4xl text-4xl font-extrabold leading-none sm:text-6xl">
+                Voice examples
+              </h1>
+              <p class="mt-5 max-w-3xl text-base leading-7 text-gray-300 sm:text-lg">
+                Easy-run text-to-speech Docker images with a browser UI and HTTP API.
+                These samples show the voices people will hear before they decide to run
+                the container or connect it to an application.
+              </p>
+            </div>
+            <div class="hero-logo-panel" aria-hidden="true">
+              <img class="hero-logo" src="../hangrylabs/logo_small.png" alt="">
+            </div>
+          </div>
+        </header>
 
-      <section class="grid" aria-label="Voice examples">
-        <article class="sample">
-          <h2>English</h2>
-          <audio controls preload="metadata" src="melotts-en.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>English v2</h2>
-          <audio controls preload="metadata" src="melotts-en-v2.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>English newest</h2>
-          <audio controls preload="metadata" src="melotts-en-newest.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>Spanish</h2>
-          <audio controls preload="metadata" src="melotts-es.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>French</h2>
-          <audio controls preload="metadata" src="melotts-fr.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>Chinese</h2>
-          <audio controls preload="metadata" src="melotts-zh.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>Japanese</h2>
-          <audio controls preload="metadata" src="melotts-jp.mp3"></audio>
-        </article>
-        <article class="sample">
-          <h2>Korean</h2>
-          <audio controls preload="metadata" src="melotts-kr.mp3"></audio>
-        </article>
+        <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Voice examples">
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English British</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-BR</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-br.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English newest</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN_NEWEST</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-newest.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English v2</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN_V2</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-v2.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-US</span>
+            </div>
+            <audio preload="metadata" src="melotts-en.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English Indian</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN_INDIA</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-india.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English Australian</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-AU</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-au.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English American</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-US</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-us.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">English default</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-Default</span>
+            </div>
+            <audio preload="metadata" src="melotts-en-default.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">Spanish</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">ES</span>
+            </div>
+            <audio preload="metadata" src="melotts-es.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">French</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">FR</span>
+            </div>
+            <audio preload="metadata" src="melotts-fr.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">Chinese</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">ZH</span>
+            </div>
+            <audio preload="metadata" src="melotts-zh.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">Japanese</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">JP</span>
+            </div>
+            <audio preload="metadata" src="melotts-jp.mp3"></audio>
+          </article>
+
+          <article class="brand-card p-5">
+            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
+              <h2 class="text-lg font-bold text-orange-400">Korean</h2>
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">KR</span>
+            </div>
+            <audio preload="metadata" src="melotts-kr.mp3"></audio>
+          </article>
+        </section>
+
       </section>
-
-      <nav class="links" aria-label="Project links">
-        <a href="../">Back to README</a>
-        <a href="https://hub.docker.com/r/sensejworld/melotts/tags">Docker Hub</a>
-        <a href="https://github.com/TheMasterOfDisasters/MeloTTS">GitHub</a>
-      </nav>
     </main>
+    <script src="player.js"></script>
+    <script src="background.js"></script>
   </body>
 </html>
