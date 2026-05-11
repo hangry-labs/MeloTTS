@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1: Build environment with dependencies and models
 # ============================================================
-FROM python:3.10-slim AS builder
+FROM python:3.11-slim AS builder
 
 ARG BUILD_ID=""
 
@@ -51,7 +51,7 @@ RUN INIT_DOWNLOADS_STRICT=${INIT_DOWNLOADS_STRICT} \
 # ============================================================
 # Stage 2: Final runtime image
 # ============================================================
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 ARG BUILD_ID=""
 ENV BUILD_ID=${BUILD_ID}

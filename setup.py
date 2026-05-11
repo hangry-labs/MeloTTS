@@ -16,7 +16,7 @@ with open('requirements.txt') as f:
 setup(
     name='melotts',
     version=package_version,
-    python_requires='>=3.10',
+    python_requires='>=3.11',
     packages=find_packages(),
     include_package_data=True,
     install_requires=reqs,

@@ -143,6 +143,12 @@ Current tag pattern:
 
 ## 📜 Version History
 
+### v0.0.9 (in development)
+- Moved the active Docker runtime/build baseline from `python:3.10-slim` to `python:3.11-slim`.
+- Raised package metadata from `python_requires>=3.10` to `python_requires>=3.11`.
+- Refreshed dependency pins for the Python 3.11 line, including newer `numpy`, `pandas`, and `networkx` pins.
+- Validated the EN-focused Docker build on Python 3.11 with `task imagesmall`, `python -m pip check`, and `task localapi`.
+
 ### v0.0.8 (10.05.2026)
 - Scope: runtime-focused cleanup for the Docker UI/API fork.
 - Removed unused upstream training surfaces, including training scripts/modules, training example data, legacy script-style package tests, and original upstream docs that no longer matched this fork.

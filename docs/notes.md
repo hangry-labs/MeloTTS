@@ -122,7 +122,7 @@ winget install --id=astral-sh.uv -e
 Refresh Python dependencies:
 
 ```bash
-uv pip compile requirements.in --upgrade --python-version 3.10 --no-header --no-annotate --output-file requirements.txt
+uv pip compile requirements.in --upgrade --python-version 3.11 --no-header --no-annotate --output-file requirements.txt
 ```
 
 After this command, inspect `requirements.txt`. It may change many indirect packages even if `requirements.in` is small.
