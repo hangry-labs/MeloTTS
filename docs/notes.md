@@ -60,15 +60,24 @@ curl -v http://localhost:8888/tts/ping
 
 ### Check API - tts
 ```bash
-curl -v -X POST http://localhost:8888/tts/convert/tts ^
+curl -v -X POST http://localhost:8888/tts/generate ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":\"0.21\",\"noise_scale\":\"0.61\",\"noise_scale_w\":\"0.81\"}" ^
   --output hello.wav
 ```
 
-### Check API - compact output
+Legacy endpoint kept for old clients:
+
 ```bash
 curl -v -X POST http://localhost:8888/tts/convert/tts ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Legacy endpoint smoke test\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  --output legacy-hello.wav
+```
+
+### Check API - compact output
+```bash
+curl -v -X POST http://localhost:8888/tts/generate ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello world. I wanted to test MP3 output\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
   --output hello.mp3
@@ -80,6 +89,33 @@ curl -v http://localhost:8888/tts/formats
 ```
 
 The UI has an Output Format dropdown and defaults to MP3. The API remains WAV-by-default when `format` is omitted.
+
+### Check API - streaming tts
+Streaming is sentence-level. The model makes one audio segment per sentence, then the API sends that segment immediately.
+
+Raw PCM stream, good for applications that can read `pcm_s16le`:
+
+```bash
+curl -v -X POST http://localhost:8888/tts/stream ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"First sentence. Second sentence.\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  --output hello-stream.pcm
+```
+
+MP3 stream, good for easier playback when the runtime has MP3 encoding:
+
+```bash
+curl -v -X POST http://localhost:8888/tts/stream ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"First sentence. Second sentence.\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"stream_format\":\"mp3\"}" ^
+  --output hello-stream.mp3
+```
+
+Available streaming formats:
+
+```bash
+curl -v http://localhost:8888/tts/stream-formats
+```
 
 ### Check API - languages
 ```bash

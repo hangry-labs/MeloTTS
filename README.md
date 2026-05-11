@@ -76,17 +76,18 @@ Then open: **[http://localhost:8888](http://localhost:8888)**
 ## API Usage Example
 
 ```bash
-curl -X POST "http://localhost:8888/tts/convert/tts" \
+curl -X POST "http://localhost:8888/tts/generate" \
   -H "Content-Type: application/json" \
   -d '{"text":"Hello world!","language":"EN","speaker_id":"EN-BR"}' \
   -o output.wav
 ```
 
 The API remains backward compatible: when `format` is omitted, it returns WAV audio as before.
+The legacy `POST /tts/convert/tts` endpoint still works, but new integrations should use `POST /tts/generate`.
 To request a smaller response, add `format` with one of `mp3`, `flac`, or `ogg`:
 
 ```bash
-curl -X POST "http://localhost:8888/tts/convert/tts" \
+curl -X POST "http://localhost:8888/tts/generate" \
   -H "Content-Type: application/json" \
   -d '{"text":"Hello world!","language":"EN","speaker_id":"EN-BR","format":"mp3"}' \
   -o output.mp3
@@ -94,6 +95,17 @@ curl -X POST "http://localhost:8888/tts/convert/tts" \
 
 Available formats are exposed at `GET /tts/formats`.
 The web UI defaults to MP3 downloads because it is a more practical size for interactive use.
+
+For applications that want audio before the full request is finished, use sentence-level streaming:
+
+```bash
+curl -X POST "http://localhost:8888/tts/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"First sentence. Second sentence.","language":"EN","speaker_id":"EN-BR"}' \
+  -o output.pcm
+```
+
+`POST /tts/stream` defaults to raw mono `pcm_s16le` chunks at the model sample rate. It can also return consecutive MP3 sentence chunks with `"stream_format":"mp3"` when MP3 encoding is available. Streaming formats are exposed at `GET /tts/stream-formats`.
 
 ---
 
@@ -148,6 +160,8 @@ Current tag pattern:
 - Raised package metadata from `python_requires>=3.10` to `python_requires>=3.11`.
 - Refreshed dependency pins for the Python 3.11 line, including newer `numpy`, `pandas`, and `networkx` pins.
 - Validated the EN-focused Docker build on Python 3.11 with `task imagesmall`, `python -m pip check`, and `task localapi`.
+- Added `POST /tts/generate` as the preferred synthesis endpoint while keeping legacy `POST /tts/convert/tts` for backward compatibility.
+- Added `POST /tts/stream` for sentence-level streaming responses plus `GET /tts/stream-formats` for discovery. The model does not emit token-level audio; streaming starts after each sentence segment is synthesized.
 
 ### v0.0.8 (10.05.2026)
 - Scope: runtime-focused cleanup for the Docker UI/API fork.
