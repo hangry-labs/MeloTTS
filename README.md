@@ -1,6 +1,6 @@
-<p>
+<p align="center">
   <a href="https://nuggies.website/">
-    <img src="logo.jpg" alt="Hangry Labs Melo T T S logo">
+    <img src="logo.jpg" alt="Hangry Labs Melo T T S logo" width="720">
   </a>
 </p>
 
