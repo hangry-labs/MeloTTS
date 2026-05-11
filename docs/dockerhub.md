@@ -60,7 +60,7 @@ The container includes the web UI and the HTTP API on the same port.
 Default API behavior returns WAV for backward compatibility:
 
 ```bash
-curl -X POST "http://localhost:8888/tts/convert/tts" ^
+curl -X POST "http://localhost:8888/tts/generate" ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello from Hangry Labs Melo T T S\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
   -o hello.wav
@@ -69,7 +69,7 @@ curl -X POST "http://localhost:8888/tts/convert/tts" ^
 Request MP3 when you want compact output:
 
 ```bash
-curl -X POST "http://localhost:8888/tts/convert/tts" ^
+curl -X POST "http://localhost:8888/tts/generate" ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello from Hangry Labs Melo T T S\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
   -o hello.mp3
@@ -80,6 +80,8 @@ Supported formats are listed by:
 ```bash
 curl http://localhost:8888/tts/formats
 ```
+
+Legacy clients using `POST /tts/convert/tts` still work. New integrations should use `POST /tts/generate`.
 
 ## Image Tags
 

@@ -829,9 +829,8 @@ async def purge_models(language: str = Body(..., embed=True)):
     return purge_models_sync(language)
 
 
-@api.post("/tts/convert/tts")
-async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
-    logger.info(f"/tts/convert/tts request: {body}")
+async def stream_tts_audio(body: TextModel, model: TTS, route_name: str):
+    logger.info(f"{route_name} request: {body}")
     try:
         output_format = normalize_output_format(body.output_format)
         bio = synthesize_to_wav_bytes(body, model)
@@ -868,6 +867,16 @@ async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_mode
     except Exception as error:
         logger.error(f"Error during TTS generation: {error}")
         return JSONResponse(status_code=500, content={"error": str(error)})
+
+
+@api.post("/tts/generate")
+async def generate_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
+    return await stream_tts_audio(body, model, "/tts/generate")
+
+
+@api.post("/tts/convert/tts", deprecated=True)
+async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
+    return await stream_tts_audio(body, model, "/tts/convert/tts")
 
 
 app = gr.mount_gradio_app(

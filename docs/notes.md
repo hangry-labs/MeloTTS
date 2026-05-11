@@ -60,15 +60,24 @@ curl -v http://localhost:8888/tts/ping
 
 ### Check API - tts
 ```bash
-curl -v -X POST http://localhost:8888/tts/convert/tts ^
+curl -v -X POST http://localhost:8888/tts/generate ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":\"0.21\",\"noise_scale\":\"0.61\",\"noise_scale_w\":\"0.81\"}" ^
   --output hello.wav
 ```
 
-### Check API - compact output
+Legacy endpoint kept for old clients:
+
 ```bash
 curl -v -X POST http://localhost:8888/tts/convert/tts ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Legacy endpoint smoke test\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  --output legacy-hello.wav
+```
+
+### Check API - compact output
+```bash
+curl -v -X POST http://localhost:8888/tts/generate ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello world. I wanted to test MP3 output\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
   --output hello.mp3
