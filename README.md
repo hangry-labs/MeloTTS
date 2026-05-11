@@ -96,6 +96,17 @@ curl -X POST "http://localhost:8888/tts/generate" \
 Available formats are exposed at `GET /tts/formats`.
 The web UI defaults to MP3 downloads because it is a more practical size for interactive use.
 
+For applications that want audio before the full request is finished, use sentence-level streaming:
+
+```bash
+curl -X POST "http://localhost:8888/tts/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"First sentence. Second sentence.","language":"EN","speaker_id":"EN-BR"}' \
+  -o output.pcm
+```
+
+`POST /tts/stream` defaults to raw mono `pcm_s16le` chunks at the model sample rate. It can also return consecutive MP3 sentence chunks with `"stream_format":"mp3"` when MP3 encoding is available. Streaming formats are exposed at `GET /tts/stream-formats`.
+
 ---
 
 ## About This Fork
@@ -150,6 +161,7 @@ Current tag pattern:
 - Refreshed dependency pins for the Python 3.11 line, including newer `numpy`, `pandas`, and `networkx` pins.
 - Validated the EN-focused Docker build on Python 3.11 with `task imagesmall`, `python -m pip check`, and `task localapi`.
 - Added `POST /tts/generate` as the preferred synthesis endpoint while keeping legacy `POST /tts/convert/tts` for backward compatibility.
+- Added `POST /tts/stream` for sentence-level streaming responses plus `GET /tts/stream-formats` for discovery. The model does not emit token-level audio; streaming starts after each sentence segment is synthesized.
 
 ### v0.0.8 (10.05.2026)
 - Scope: runtime-focused cleanup for the Docker UI/API fork.

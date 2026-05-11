@@ -90,6 +90,33 @@ curl -v http://localhost:8888/tts/formats
 
 The UI has an Output Format dropdown and defaults to MP3. The API remains WAV-by-default when `format` is omitted.
 
+### Check API - streaming tts
+Streaming is sentence-level. The model makes one audio segment per sentence, then the API sends that segment immediately.
+
+Raw PCM stream, good for applications that can read `pcm_s16le`:
+
+```bash
+curl -v -X POST http://localhost:8888/tts/stream ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"First sentence. Second sentence.\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  --output hello-stream.pcm
+```
+
+MP3 stream, good for easier playback when the runtime has MP3 encoding:
+
+```bash
+curl -v -X POST http://localhost:8888/tts/stream ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"First sentence. Second sentence.\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"stream_format\":\"mp3\"}" ^
+  --output hello-stream.mp3
+```
+
+Available streaming formats:
+
+```bash
+curl -v http://localhost:8888/tts/stream-formats
+```
+
 ### Check API - languages
 ```bash
 curl -v http://localhost:8888/tts/languages

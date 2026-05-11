@@ -51,6 +51,7 @@ The container includes the web UI and the HTTP API on the same port.
 - HTTP API for applications and automation
 - MP3 output from the UI by default
 - Backward-compatible WAV API responses unless `format` is requested
+- Sentence-level streaming API for applications that want earlier audio delivery
 - Full multilingual image and smaller EN-focused image
 - GPU support when Docker/NVIDIA support is available
 - Offline-friendly usage once the image and baked model assets are available locally
@@ -82,6 +83,21 @@ curl http://localhost:8888/tts/formats
 ```
 
 Legacy clients using `POST /tts/convert/tts` still work. New integrations should use `POST /tts/generate`.
+
+Streaming API for applications:
+
+```bash
+curl -X POST "http://localhost:8888/tts/stream" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"First sentence. Second sentence.\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  -o hello.pcm
+```
+
+Streaming defaults to raw mono `pcm_s16le` chunks at the model sample rate. You can also request MP3 sentence chunks with `"stream_format":"mp3"` when MP3 encoding is available. List streaming formats with:
+
+```bash
+curl http://localhost:8888/tts/stream-formats
+```
 
 ## Image Tags
 

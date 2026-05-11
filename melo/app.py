@@ -315,6 +315,30 @@ FORMAT_ALIASES = {
     "vorbis": "ogg",
 }
 
+
+STREAM_FORMATS = {
+    "pcm_s16le": {
+        "media_type": "audio/pcm;rate={sample_rate};channels=1;encoding=signed-integer;bits=16",
+        "extension": "pcm",
+        "label": "Raw PCM 16-bit little-endian",
+    },
+    "mp3": {
+        "media_type": "audio/mpeg",
+        "extension": "mp3",
+        "label": "MP3 sentence chunks",
+    },
+}
+
+STREAM_FORMAT_ALIASES = {
+    "pcm": "pcm_s16le",
+    "s16le": "pcm_s16le",
+    "raw": "pcm_s16le",
+    ".pcm": "pcm_s16le",
+    ".mp3": "mp3",
+    "mpeg": "mp3",
+}
+
+
 class TextModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -329,6 +353,16 @@ class TextModel(BaseModel):
         "wav",
         alias="format",
         description="Response audio format. Defaults to wav for backward compatibility. Supported: wav, mp3, flac, ogg.",
+    )
+
+
+class StreamingTextModel(TextModel):
+    stream_format: str = Field(
+        "pcm_s16le",
+        description=(
+            "Streaming response format. Defaults to raw PCM for true chunked streaming. "
+            "Supported: pcm_s16le, mp3."
+        ),
     )
 
 
@@ -399,6 +433,7 @@ def get_status_payload():
         "loaded_languages": list(models.keys()),
         "presets": PARAMETER_PRESETS,
         "output_formats": get_supported_output_formats(),
+        "stream_formats": STREAM_FORMATS,
     }
 
 
@@ -413,10 +448,7 @@ def get_model(body: TextModel) -> TTS:
 def synthesize_to_wav_bytes(body, model):
     if not body.text.strip():
         raise HTTPException(status_code=400, detail="Text must not be empty")
-    try:
-        spk_id = model.hps.data.spk2id[body.speaker_id]
-    except KeyError:
-        raise HTTPException(status_code=400, detail=f"Invalid speaker_id '{body.speaker_id}'")
+    spk_id = resolve_speaker_id(body, model)
 
     bio = io.BytesIO()
     model.tts_to_file(
@@ -431,6 +463,13 @@ def synthesize_to_wav_bytes(body, model):
     )
     bio.seek(0)
     return bio
+
+
+def resolve_speaker_id(body, model):
+    try:
+        return model.hps.data.spk2id[body.speaker_id]
+    except (AttributeError, KeyError):
+        raise HTTPException(status_code=400, detail=f"Invalid speaker_id '{body.speaker_id}'")
 
 
 def normalize_output_format(output_format):
@@ -450,6 +489,23 @@ def normalize_output_format(output_format):
     return normalized
 
 
+def normalize_stream_format(stream_format):
+    normalized = (stream_format or "pcm_s16le").strip().lower()
+    normalized = STREAM_FORMAT_ALIASES.get(normalized, normalized)
+    if normalized not in STREAM_FORMATS:
+        supported = ", ".join(STREAM_FORMATS.keys())
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported stream_format '{stream_format}'. Supported formats: {supported}",
+        )
+    if normalized == "mp3" and "mp3" not in get_supported_output_formats():
+        raise HTTPException(
+            status_code=500,
+            detail="MP3 streaming is configured but MP3 encoding is not available in this runtime",
+        )
+    return normalized
+
+
 def encode_audio_bytes(audio, sample_rate, output_format):
     config = OUTPUT_FORMATS[output_format]
     encoded = io.BytesIO()
@@ -462,6 +518,11 @@ def encode_audio_bytes(audio, sample_rate, output_format):
     )
     encoded.seek(0)
     return encoded
+
+
+def encode_pcm_s16le(audio):
+    clamped = audio.clip(-1.0, 1.0)
+    return (clamped * 32767.0).astype("<i2").tobytes()
 
 
 def write_ui_audio_file(wav_bio, audio, sample_rate, output_format):
@@ -796,6 +857,22 @@ async def formats():
     return {"default": "wav", "formats": get_supported_output_formats(), "aliases": FORMAT_ALIASES}
 
 
+@api.get("/tts/stream-formats")
+async def stream_formats():
+    logger.info("/tts/stream-formats request received")
+    return {
+        "default": "pcm_s16le",
+        "formats": STREAM_FORMATS,
+        "aliases": STREAM_FORMAT_ALIASES,
+        "granularity": "sentence",
+        "notes": [
+            "The model emits complete sentence segments, not token-level audio.",
+            "pcm_s16le is raw mono 16-bit little-endian PCM at the model sample rate.",
+            "mp3 streams are sent as consecutive encoded sentence chunks.",
+        ],
+    }
+
+
 @api.get("/tts/languages")
 async def list_languages():
     logger.info("/tts/languages request received")
@@ -869,9 +946,63 @@ async def stream_tts_audio(body: TextModel, model: TTS, route_name: str):
         return JSONResponse(status_code=500, content={"error": str(error)})
 
 
+def iter_stream_audio(body: StreamingTextModel, model: TTS, stream_format: str, sample_rate: int, spk_id: int):
+    for audio in model.iter_audio_segments(
+        body.text,
+        spk_id,
+        speed=body.speed,
+        sdp_ratio=body.sdp_ratio,
+        noise_scale=body.noise_scale,
+        noise_scale_w=body.noise_scale_w,
+        quiet=True,
+        include_silence=True,
+    ):
+        if stream_format == "pcm_s16le":
+            yield encode_pcm_s16le(audio)
+        elif stream_format == "mp3":
+            yield encode_audio_bytes(audio, sample_rate, "mp3").getvalue()
+
+
+async def stream_tts_audio_segments(body: StreamingTextModel, model: TTS, route_name: str):
+    logger.info(f"{route_name} request: {body}")
+    try:
+        if not body.text.strip():
+            raise HTTPException(status_code=400, detail="Text must not be empty")
+        stream_format = normalize_stream_format(body.stream_format)
+        spk_id = resolve_speaker_id(body, model)
+        sample_rate = model.hps.data.sampling_rate
+        format_config = STREAM_FORMATS[stream_format]
+        media_type = format_config["media_type"].format(sample_rate=sample_rate)
+        headers = {
+            "Content-Disposition": (
+                f"attachment; filename=tts_{body.language}_stream.{format_config['extension']}"
+            ),
+            "X-MeloTTS-Language": body.language,
+            "X-MeloTTS-Speaker": body.speaker_id,
+            "X-MeloTTS-Sample-Rate": str(sample_rate),
+            "X-MeloTTS-Stream-Format": stream_format,
+            "X-MeloTTS-Stream-Granularity": "sentence",
+        }
+        return StreamingResponse(
+            iter_stream_audio(body, model, stream_format, sample_rate, spk_id),
+            media_type=media_type,
+            headers=headers,
+        )
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.error(f"Error during streaming TTS generation: {error}")
+        return JSONResponse(status_code=500, content={"error": str(error)})
+
+
 @api.post("/tts/generate")
 async def generate_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
     return await stream_tts_audio(body, model, "/tts/generate")
+
+
+@api.post("/tts/stream")
+async def stream_tts(body: StreamingTextModel = Body(...), model: TTS = Depends(get_model)):
+    return await stream_tts_audio_segments(body, model, "/tts/stream")
 
 
 @api.post("/tts/convert/tts", deprecated=True)
