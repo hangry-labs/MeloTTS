@@ -155,7 +155,7 @@ Current tag pattern:
 
 ## 📜 Version History
 
-### v0.0.9 (in development)
+### v0.1.0 (11.05.2026)
 - Moved the active Docker runtime/build baseline from `python:3.10-slim` to `python:3.11-slim`.
 - Raised package metadata from `python_requires>=3.10` to `python_requires>=3.11`.
 - Refreshed dependency pins for the Python 3.11 line, including newer `numpy`, `pandas`, and `networkx` pins.
