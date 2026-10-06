@@ -1,26 +1,31 @@
 param(
-    [string]$Version = "",
-    [string]$NextVersion = ""
+    [string]$DryRun = "0",
+    [string]$NextVersion = "",
+    [string]$SkipValidation = "0"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$versionFile = Join-Path $repoRoot "VERSION"
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-
-function Normalize-Version([string]$value) {
-    $normalized = $value.Trim()
-    if (-not $normalized.StartsWith("v")) {
-        $normalized = "v$normalized"
-    }
-    return $normalized
+function Test-Enabled {
+    param([string]$Value)
+    return $Value -match '^(1|true|yes|y)$'
 }
 
-function Get-NextPatchSnapshot([string]$releaseVersion) {
-    if ($releaseVersion -notmatch "^v(\d+)\.(\d+)\.(\d+)$") {
-        throw "Release version must look like v0.0.8. Got '$releaseVersion'."
+function Set-Text {
+    param(
+        [string]$Path,
+        [string]$Text
+    )
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    $encoding = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($resolved, $Text, $encoding)
+}
+
+function Get-NextPatchSnapshot {
+    param([string]$ReleaseVersion)
+    if ($ReleaseVersion -notmatch '^v(\d+)\.(\d+)\.(\d+)$') {
+        throw "Release version must look like v1.0.0. Got '$ReleaseVersion'."
     }
     $major = [int]$Matches[1]
     $minor = [int]$Matches[2]
@@ -28,76 +33,126 @@ function Get-NextPatchSnapshot([string]$releaseVersion) {
     return "v$major.$minor.$patch-SNAPSHOT"
 }
 
-function Assert-Releasable-WorkingTree {
-    $statusLines = @(git status --porcelain=v1)
-    $blockingChanges = @()
-    $trackedTodoChanges = @()
+function Update-DockerImageTags {
+    param(
+        [string]$Text,
+        [string]$ReleaseVersion
+    )
+    return [regex]::Replace(
+        $Text,
+        'hangrylabs/melotts:v\d+\.\d+\.\d+(_en)?(?:@sha256:[0-9a-f]{64})?',
+        { param($match) "hangrylabs/melotts:$ReleaseVersion$($match.Groups[1].Value)" }
+    )
+}
 
-    foreach ($line in $statusLines) {
-        if ($line.Length -lt 4) {
-            continue
-        }
-
-        $path = $line.Substring(3)
-        $isTodoPath = $path -eq "todo" -or $path.StartsWith("todo/") -or $path.StartsWith("todo\")
-
-        if ($isTodoPath) {
-            if (-not $line.StartsWith("?? ")) {
-                $trackedTodoChanges += $line
-            }
-            continue
-        }
-
-        $blockingChanges += $line
-    }
-
-    if ($trackedTodoChanges) {
-        throw "todo/ files are local-only and must not be staged or tracked before release:`n$($trackedTodoChanges -join "`n")"
-    }
-
-    if ($blockingChanges) {
-        throw "Working tree must be clean before release, except untracked todo/ files:`n$($blockingChanges -join "`n")"
+function Invoke-Step {
+    param(
+        [string]$Description,
+        [scriptblock]$Action
+    )
+    Write-Host "==> $Description"
+    if (-not (Test-Enabled $DryRun)) {
+        & $Action
     }
 }
 
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Push-Location $repoRoot
 try {
-    Assert-Releasable-WorkingTree
+    if (-not (Test-Path -LiteralPath "VERSION")) {
+        throw "VERSION file is missing from the repository root."
+    }
 
-    $currentVersion = Normalize-Version (Get-Content -Raw -LiteralPath $versionFile)
-    if (-not $Version) {
-        if ($currentVersion -notmatch "-SNAPSHOT$") {
-            throw "VERSION must be a snapshot when RELEASE_VERSION is omitted. Got '$currentVersion'."
+    $snapshotVersion = (Get-Content -Raw -LiteralPath "VERSION").Trim()
+    if ($snapshotVersion -notmatch '^v(\d+)\.(\d+)\.(\d+)-SNAPSHOT$') {
+        throw "VERSION must be a snapshot such as v1.0.0-SNAPSHOT. Current: '$snapshotVersion'."
+    }
+    $releaseVersion = $snapshotVersion -replace '-SNAPSHOT$', ''
+
+    if ([string]::IsNullOrWhiteSpace($NextVersion)) {
+        $nextSnapshotVersion = Get-NextPatchSnapshot $releaseVersion
+    } else {
+        $nextSnapshotVersion = $NextVersion.Trim()
+        if (-not $nextSnapshotVersion.StartsWith('v')) {
+            $nextSnapshotVersion = "v$nextSnapshotVersion"
         }
-        $releaseVersion = $currentVersion -replace "-SNAPSHOT$", ""
-    } else {
-        $releaseVersion = Normalize-Version $Version
-    }
-
-    if ($currentVersion -ne "$releaseVersion-SNAPSHOT") {
-        throw "VERSION is '$currentVersion', which does not match release snapshot '$releaseVersion-SNAPSHOT'."
-    }
-
-    if (-not $NextVersion) {
-        $NextVersion = Get-NextPatchSnapshot $releaseVersion
-    } else {
-        $NextVersion = Normalize-Version $NextVersion
-        if ($NextVersion -notmatch "-SNAPSHOT$") {
-            $NextVersion = "$NextVersion-SNAPSHOT"
+        if (-not $nextSnapshotVersion.EndsWith('-SNAPSHOT')) {
+            $nextSnapshotVersion = "$nextSnapshotVersion-SNAPSHOT"
         }
     }
+    if ($nextSnapshotVersion -notmatch '^v\d+\.\d+\.\d+-SNAPSHOT$') {
+        throw "NextVersion must look like v1.0.1-SNAPSHOT. Current: '$nextSnapshotVersion'."
+    }
 
-    [System.IO.File]::WriteAllText($versionFile, "$releaseVersion`n", $utf8NoBom)
-    git add VERSION
-    git commit -m "Release $releaseVersion"
-    git tag $releaseVersion
+    $trackedPrivateFiles = @(git ls-files -- AGENTS.md .ai todo)
+    if ($trackedPrivateFiles) {
+        throw "Private agent files must not be tracked before release:`n$($trackedPrivateFiles -join "`n")"
+    }
 
-    [System.IO.File]::WriteAllText($versionFile, "$NextVersion`n", $utf8NoBom)
-    git add VERSION
-    git commit -m "Start $NextVersion"
+    $status = git status --porcelain -- . ':(exclude)todo' ':(exclude).ai'
+    if ($status -and -not (Test-Enabled $DryRun)) {
+        throw "Working tree outside .ai/ and todo/ must be clean before release. Commit or stash release-relevant changes first."
+    }
+    if (git rev-parse -q --verify "refs/tags/$releaseVersion" 2>$null) {
+        throw "Tag $releaseVersion already exists."
+    }
 
-    Write-Host "Prepared release $releaseVersion and next development version $NextVersion."
-    Write-Host "Publish with: task releasepush RELEASE_VERSION=$releaseVersion"
+    Write-Host "Release version: $releaseVersion"
+    Write-Host "Next snapshot:   $nextSnapshotVersion"
+
+    Invoke-Step "Update release files for $releaseVersion" {
+        Set-Text "VERSION" "$releaseVersion`n"
+
+        $readme = Get-Content -Raw -LiteralPath "README.md"
+        $readme = $readme.Replace("### $releaseVersion (in development)", "### $releaseVersion")
+        $historyHeading = [regex]::Match($readme, '(?m)^## .*Version History\r?$')
+        if (-not $historyHeading.Success) {
+            throw "README.md is missing the version-history section."
+        }
+        $historyIndex = $historyHeading.Index
+        $readmePrefix = Update-DockerImageTags $readme.Substring(0, $historyIndex) $releaseVersion
+        Set-Text "README.md" ($readmePrefix + $readme.Substring($historyIndex))
+
+        $dockerHub = Get-Content -Raw -LiteralPath "docs/dockerhub.md"
+        Set-Text "docs/dockerhub.md" (Update-DockerImageTags $dockerHub $releaseVersion)
+    }
+
+    Invoke-Step "Run release validation" {
+        if (-not (Test-Enabled $SkipValidation)) {
+            py -3.13 -m compileall -q melo tests
+            if ($LASTEXITCODE -ne 0) { throw "Python compilation failed." }
+            py -3.13 -m unittest discover -s tests -v
+            if ($LASTEXITCODE -ne 0) { throw "Python tests failed." }
+            Get-ChildItem melo/standalone_ui/static -Filter '*.js' | ForEach-Object {
+                node --check $_.FullName
+                if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax check failed for $($_.FullName)." }
+            }
+            task image
+            if ($LASTEXITCODE -ne 0) { throw "Full Docker image build failed." }
+        }
+    }
+
+    Invoke-Step "Commit and tag $releaseVersion" {
+        git add VERSION README.md docs/dockerhub.md
+        git commit -m "release: $releaseVersion"
+        if ($LASTEXITCODE -ne 0) { throw "Release commit failed." }
+        git tag -a $releaseVersion -m "Release $releaseVersion"
+        if ($LASTEXITCODE -ne 0) { throw "Release tag failed." }
+    }
+
+    Invoke-Step "Prepare $nextSnapshotVersion" {
+        Set-Text "VERSION" "$nextSnapshotVersion`n"
+        git add VERSION
+        git commit -m "chore: start $nextSnapshotVersion"
+        if ($LASTEXITCODE -ne 0) { throw "Next-snapshot commit failed." }
+    }
+
+    if (Test-Enabled $DryRun) {
+        Write-Host "Dry run only: no files, builds, commits, or tags were changed."
+    } else {
+        Write-Host "Prepared $releaseVersion and $nextSnapshotVersion locally."
+        Write-Host "Publish with: task releasepush RELEASE_VERSION=$releaseVersion"
+    }
 } finally {
     Pop-Location
 }

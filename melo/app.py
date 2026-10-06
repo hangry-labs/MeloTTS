@@ -1,29 +1,25 @@
-import base64
 import gc
 import io
 import json
 import logging
 import os
-import random
-import tempfile
+import threading
 from pathlib import Path
 
-os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
-
-import gradio as gr
 import soundfile as sf
 import torch
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.concurrency import run_in_threadpool
 
 from melo.api import TTS
 from melo.split_utils import split_sentence
+from melo.standalone_ui.server import create_app as create_ui_app
 
 
 APP_ROOT = Path(__file__).resolve().parent.parent
-ICON_PATH = APP_ROOT / "icon.png"
 
 
 def _read_non_empty_env(name: str):
@@ -147,6 +143,7 @@ LANGUAGES = [
 validate_nltk_resources(LANGUAGES)
 logger.info(f"Loading models for languages: {LANGUAGES}")
 models = {}
+MODEL_LOCK = threading.RLock()
 for lang in LANGUAGES:
     try:
         models[lang] = TTS(language=lang, device=DEVICE)
@@ -437,6 +434,34 @@ def get_status_payload():
     }
 
 
+def load_model_sync(language):
+    if language not in LANGUAGES:
+        raise HTTPException(status_code=404, detail=f"Language '{language}' is not configured")
+    with MODEL_LOCK:
+        if language not in models:
+            logger.info(f"Loading TTS model for {language} on demand")
+            models[language] = TTS(language=language, device=DEVICE)
+        return {
+            "loaded": language,
+            "loaded_languages": list(models.keys()),
+        }
+
+
+def purge_models_sync(language):
+    with MODEL_LOCK:
+        keep_model = models.get(language)
+        if not keep_model:
+            raise HTTPException(status_code=404, detail=f"Language '{language}' is not loaded")
+        removed = [lang for lang in models if lang != language]
+        models.clear()
+        models[language] = keep_model
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    logger.info(f"Released models from memory: {removed}. Kept: {language}")
+    return {"kept": language, "removed": removed, "loaded_languages": list(models.keys())}
+
+
 def get_model(body: TextModel) -> TTS:
     model = models.get(body.language)
     if not model:
@@ -524,293 +549,6 @@ def encode_pcm_s16le(audio):
     clamped = audio.clip(-1.0, 1.0)
     return (clamped * 32767.0).astype("<i2").tobytes()
 
-
-def write_ui_audio_file(wav_bio, audio, sample_rate, output_format):
-    output_format = normalize_output_format(output_format)
-    suffix = f".{OUTPUT_FORMATS[output_format]['extension']}"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="melotts_ui_") as temp_file:
-        output_path = Path(temp_file.name)
-
-    if output_format == "wav":
-        wav_bio.seek(0)
-        output_path.write_bytes(wav_bio.read())
-    else:
-        encoded = encode_audio_bytes(audio, sample_rate, output_format)
-        output_path.write_bytes(encoded.getvalue())
-    return str(output_path)
-
-
-def make_request_body(
-    text,
-    language,
-    speaker,
-    speed,
-    sdp_ratio,
-    noise_scale,
-    noise_scale_w,
-    output_format="wav",
-):
-    return TextModel(
-        text=text or "",
-        language=language,
-        speaker_id=speaker,
-        speed=speed,
-        sdp_ratio=sdp_ratio,
-        noise_scale=noise_scale,
-        noise_scale_w=noise_scale_w,
-        output_format=output_format,
-    )
-
-
-def synthesize_for_ui(text, language, speaker, output_format, speed, sdp_ratio, noise_scale, noise_scale_w):
-    body = make_request_body(
-        text,
-        language,
-        speaker,
-        speed,
-        sdp_ratio,
-        noise_scale,
-        noise_scale_w,
-        output_format=output_format,
-    )
-    model = models.get(body.language)
-    if not model:
-        raise gr.Error(f"Language '{body.language}' is not loaded")
-    try:
-        normalized_format = normalize_output_format(body.output_format)
-        bio = synthesize_to_wav_bytes(body, model)
-        waveform, sample_rate = sf.read(bio, dtype="float32")
-        output_path = write_ui_audio_file(bio, waveform, sample_rate, normalized_format)
-        metrics_payload = get_text_metrics(body.text, body.language)
-        duration = len(waveform) / sample_rate if sample_rate else 0
-        output_label = OUTPUT_FORMATS[normalized_format]["label"]
-        status_text = (
-            f"Generated {duration:.2f}s {output_label} audio | "
-            f"{metrics_payload['characters']} chars | "
-            f"{metrics_payload['words']} words | "
-            f"{metrics_payload['segments']} segments"
-        )
-        logger.info(
-            f"UI synthesis complete for language={body.language}, speaker={body.speaker_id}, "
-            f"duration={duration:.2f}s, format={normalized_format}"
-        )
-        return output_path, status_text
-    except HTTPException as error:
-        raise gr.Error(str(error.detail)) from error
-    except Exception as error:
-        logger.exception(f"UI synthesis failed: {error}")
-        raise gr.Error(str(error)) from error
-
-
-def update_language(language, current_text):
-    speakers = get_speakers_for_language(language)
-    default_text = DEFAULT_TEXTS.get(language, current_text or "")
-    return gr.update(choices=speakers, value=speakers[0] if speakers else None), default_text
-
-
-def apply_preset(preset_name):
-    preset = PARAMETER_PRESETS.get(preset_name, PARAMETER_PRESETS["Balanced"])
-    return preset["speed"], preset["sdp_ratio"], preset["noise_scale"], preset["noise_scale_w"]
-
-
-def normalize_text(text):
-    return " ".join((text or "").split())
-
-
-def load_random_quote(language):
-    quotes = QUOTE_BANK.get(language) or QUOTE_BANK["EN"]
-    quote = random.choice(quotes)
-    return quote, metrics_for_ui(quote, language)
-
-
-def metrics_for_ui(text, language):
-    metrics_payload = get_text_metrics(text, language)
-    return (
-        f"{metrics_payload['characters']} characters | "
-        f"{metrics_payload['words']} words | "
-        f"{metrics_payload['segments']} segments"
-    )
-
-
-def purge_models_sync(language):
-    global models
-    keep_model = models.get(language)
-    if not keep_model:
-        raise HTTPException(status_code=404, detail=f"Language '{language}' is not loaded")
-    removed = [lang for lang in list(models.keys()) if lang != language]
-    models = {language: keep_model}
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    logger.info(f"Released models from memory: {removed}. Kept: {language}")
-    return {"kept": language, "removed": removed, "loaded_languages": list(models.keys())}
-
-
-def release_unused_models_for_ui(language):
-    result = purge_models_sync(language)
-    speakers = get_speakers_for_language(language)
-    gr.Info(f"Released {len(result['removed'])} model(s). Kept loaded: {language}.")
-    return (
-        gr.update(choices=list(models.keys()), value=language),
-        gr.update(choices=speakers, value=speakers[0] if speakers else None),
-    )
-
-
-def load_icon_data_uri():
-    try:
-        return "data:image/png;base64," + base64.b64encode(ICON_PATH.read_bytes()).decode("ascii")
-    except FileNotFoundError:
-        logger.warning(f"UI icon not found at {ICON_PATH}")
-    except Exception as error:
-        logger.warning(f"Unable to load UI icon from {ICON_PATH}: {error}")
-    return ""
-
-
-BADGE_CSS = """
-#build-badge {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.45);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    backdrop-filter: blur(2px);
-}
-#brand-strip {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-#brand-strip img {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-}
-#brand-strip strong {
-    font-size: 20px;
-}
-"""
-
-ICON_DATA_URI = load_icon_data_uri()
-HEAD_HTML = f'<link rel="icon" type="image/png" href="{ICON_DATA_URI}">' if ICON_DATA_URI else ""
-BRAND_HTML = (
-    f'<div id="brand-strip"><img src="{ICON_DATA_URI}" alt="MeloTTS icon"><strong>MeloTTS</strong></div>'
-    if ICON_DATA_URI
-    else "<div id='brand-strip'><strong>MeloTTS</strong></div>"
-)
-
-
-initial_language = next(iter(models.keys()), LANGUAGES[0] if LANGUAGES else "EN")
-initial_speakers = get_speakers_for_language(initial_language)
-initial_speaker = initial_speakers[0] if initial_speakers else None
-output_format_choices = list(get_supported_output_formats().keys())
-
-with gr.Blocks(analytics_enabled=False) as generate_tab:
-    out_audio = gr.Audio(label="Output Audio", interactive=False, streaming=False, autoplay=True)
-    generate_btn = gr.Button("Generate", variant="primary")
-    with gr.Accordion("Output Details", open=True):
-        status_box = gr.Textbox(
-            value="No audio generated yet.",
-            interactive=False,
-            show_label=False,
-            info="Generation details and text metrics.",
-        )
-        gr.Button("Open API Docs", link="/tts/docs", variant="secondary")
-
-with gr.Blocks(analytics_enabled=False) as voices_tab:
-    voices_json = gr.JSON(label="Loaded Voices", value=get_voice_inventory())
-    refresh_voices_btn = gr.Button("Refresh", variant="secondary")
-
-with gr.Blocks(title="MeloTTS", analytics_enabled=False) as ui:
-    gr.HTML(f"<style>{BADGE_CSS}</style>")
-    gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}<br>{RUNTIME_LABEL}</div>")
-    gr.HTML(BRAND_HTML)
-    with gr.Row():
-        with gr.Column():
-            text = gr.Textbox(
-                value=DEFAULT_TEXTS.get(initial_language, ""),
-                label="Input Text",
-                info="Arbitrarily many characters supported",
-                lines=5,
-            )
-            metrics_box = gr.Textbox(
-                value=metrics_for_ui(DEFAULT_TEXTS.get(initial_language, ""), initial_language),
-                label="Text Metrics",
-                interactive=False,
-            )
-            with gr.Row():
-                language = gr.Dropdown(
-                    choices=list(models.keys()),
-                    value=initial_language,
-                    label="Language",
-                    info="Loaded MeloTTS model",
-                    filterable=False,
-                    allow_custom_value=False,
-                )
-                speaker = gr.Dropdown(
-                    choices=initial_speakers,
-                    value=initial_speaker,
-                    label="Speaker",
-                    info="Available speakers for selected language",
-                    filterable=False,
-                    allow_custom_value=False,
-                )
-            preset = gr.Dropdown(
-                choices=list(PARAMETER_PRESETS.keys()),
-                value="Balanced",
-                label="Preset",
-                info="Quick synthesis parameter set",
-                filterable=False,
-                allow_custom_value=False,
-            )
-            output_format = gr.Dropdown(
-                choices=output_format_choices,
-                value=UI_DEFAULT_OUTPUT_FORMAT,
-                label="Output Format",
-                info="UI download format. API default is still WAV when omitted.",
-                filterable=False,
-                allow_custom_value=False,
-            )
-            speed = gr.Slider(minimum=0.5, maximum=2, value=1, step=0.05, label="Speed")
-            with gr.Accordion("Advanced Synthesis", open=False):
-                sdp_ratio = gr.Slider(minimum=0, maximum=1, value=0.2, step=0.01, label="SDP Ratio")
-                noise_scale = gr.Slider(minimum=0, maximum=1.5, value=0.6, step=0.01, label="Noise Scale")
-                noise_scale_w = gr.Slider(
-                    minimum=0,
-                    maximum=1.5,
-                    value=0.8,
-                    step=0.01,
-                    label="Noise Scale W",
-                )
-            sample_btn = gr.Button("Random Quote", variant="secondary")
-            with gr.Row():
-                normalize_btn = gr.Button("Normalize Spacing", variant="secondary")
-                purge_btn = gr.Button("Purge Other Models", variant="secondary")
-        with gr.Column():
-            gr.TabbedInterface([generate_tab, voices_tab], ["Generate", "Voices"])
-
-    language.change(update_language, inputs=[language, text], outputs=[speaker, text])
-    language.change(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
-    text.change(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
-    preset.change(apply_preset, inputs=[preset], outputs=[speed, sdp_ratio, noise_scale, noise_scale_w])
-    sample_btn.click(load_random_quote, inputs=[language], outputs=[text, metrics_box])
-    normalize_btn.click(normalize_text, inputs=[text], outputs=[text])
-    normalize_btn.click(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
-    purge_btn.click(release_unused_models_for_ui, inputs=[language], outputs=[language, speaker])
-    generate_btn.click(
-        synthesize_for_ui,
-        inputs=[text, language, speaker, output_format, speed, sdp_ratio, noise_scale, noise_scale_w],
-        outputs=[out_audio, status_box],
-    )
-    refresh_voices_btn.click(get_voice_inventory, inputs=[], outputs=[voices_json])
-
-ui.queue(default_concurrency_limit=4, api_open=False)
 
 api = FastAPI(
     title="TTS Service API",
@@ -903,7 +641,12 @@ async def metrics(body: MetricsModel = Body(...)):
 
 @api.post("/tts/purge")
 async def purge_models(language: str = Body(..., embed=True)):
-    return purge_models_sync(language)
+    return await run_in_threadpool(purge_models_sync, language)
+
+
+@api.post("/tts/load")
+async def load_model(language: str = Body(..., embed=True)):
+    return await run_in_threadpool(load_model_sync, language)
 
 
 async def stream_tts_audio(body: TextModel, model: TTS, route_name: str):
@@ -1010,21 +753,16 @@ async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_mode
     return await stream_tts_audio(body, model, "/tts/convert/tts")
 
 
-app = gr.mount_gradio_app(
-    api,
-    ui,
-    path="/",
-    favicon_path=str(ICON_PATH) if ICON_PATH.exists() else None,
-    head=HEAD_HTML,
-)
-logger.info("Mounted Gradio UI at / with TTS API routes under /tts")
-
+app = create_ui_app(api_app=api)
+logger.info("Mounted standalone UI at / with TTS API routes under /tts")
 
 def main():
     import uvicorn
 
-    logger.info("Starting server on 0.0.0.0:8888")
-    uvicorn.run(app, host="0.0.0.0", port=8888, log_level="info")
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8888"))
+    logger.info(f"Starting server on {host}:{port}")
+    uvicorn.run(app, host=host, port=port, log_level="info")
 
 
 if __name__ == "__main__":

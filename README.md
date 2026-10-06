@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://nuggies.website/">
-    <img src="logo.jpg" alt="Hangry Labs Melo T T S logo" width="720">
+    <img src="assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo T T S logo" width="1000">
   </a>
 </p>
 
@@ -17,7 +17,7 @@ You get:
 - Full multilingual images and smaller EN-focused images
 - Offline-friendly usage: download an image once, keep it, and run it later without relying on live model downloads
 
-Official Docker images are published here: [hangrylabs/melotts on Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags).
+Official container images are published to [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GitHub Container Registry](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
 
 Voice examples are available here: [hangry-labs.github.io/MeloTTS/examples](https://hangry-labs.github.io/MeloTTS/examples/).
 
@@ -154,6 +154,18 @@ Current tag pattern:
 ---
 
 ## 📜 Version History
+
+### v1.0.0 (in development)
+- Replaced the Gradio interface with the shared Hangry Labs standalone FastAPI UI architecture used by KokoroTTS.
+- Added responsive expanded/compact branding, local Lucide icons, WaveSurfer playback and trimming, Generate/Stream/API/System workspaces, model residency controls, and complete demand-driven GPU telemetry with history, hover details, and bounded sampling.
+- Added `POST /tts/load` for loading configured models on demand; existing API behavior and the WAV default remain backward compatible.
+- Moved the Docker and package baseline to Python 3.13 and CUDA 13.0 PyTorch wheels.
+- Removed Gradio and the obsolete `cached-path` dependency branch, then regenerated the Python 3.13 lockfile from `requirements.in`.
+- Expanded rapid local iteration tasks to mount the complete `melo/`, `assets/`, and `VERSION` surface without rebuilding the image.
+- Made full images and normal local runs explicitly default to all language families; EN images default to `EN`, `EN_V2`, and `EN_NEWEST`.
+- Consolidated Docker publication into one strict, metadata-rich pipeline for matching Docker Hub and GHCR full/English-family images.
+- Replaced legacy artwork with optimized WebP sets for Melo T T S product surfaces and Hangry Labs organization surfaces.
+- Added structural tests for the standalone browser workspace.
 
 ### v0.1.0 (11.05.2026)
 - Moved the active Docker runtime/build baseline from `python:3.10-slim` to `python:3.11-slim`.

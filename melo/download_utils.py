@@ -1,8 +1,12 @@
 
-import torch
+import hashlib
 import os
+from pathlib import Path
+from urllib.request import urlretrieve
+
+import torch
+
 from . import utils
-from cached_path import cached_path
 from huggingface_hub import hf_hub_download
 
 DOWNLOAD_CKPT_URLS = {
@@ -35,6 +39,25 @@ LANG_TO_HF_REPO_ID = {
     'ZH': 'myshell-ai/MeloTTS-Chinese',
     'KR': 'myshell-ai/MeloTTS-Korean',
 }
+
+
+def _download_url(url):
+    cache_root = Path(
+        os.getenv("MELOTTS_DOWNLOAD_CACHE", Path.home() / ".cache" / "melotts" / "downloads")
+    )
+    cache_root.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
+    destination = cache_root / f"{digest}-{url.rsplit('/', 1)[-1]}"
+    if destination.is_file():
+        return str(destination)
+
+    temporary = destination.with_suffix(destination.suffix + ".part")
+    try:
+        urlretrieve(url, temporary)
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return str(destination)
 
 def _check_offline_path(language, filename):
     root_dir = os.getenv("MELOTTTS_MODELS")
@@ -72,7 +95,7 @@ def load_or_download_config(locale, use_hf=True, config_path=None):
                 config_path = hf_hub_download(repo_id=LANG_TO_HF_REPO_ID[language], filename="config.json")
             else:
                 assert language in DOWNLOAD_CONFIG_URLS
-                config_path = cached_path(DOWNLOAD_CONFIG_URLS[language])
+                config_path = _download_url(DOWNLOAD_CONFIG_URLS[language])
 
     return utils.get_hparams_from_file(config_path)
 
@@ -91,6 +114,6 @@ def load_or_download_model(locale, device, use_hf=True, ckpt_path=None):
                 ckpt_path = hf_hub_download(repo_id=LANG_TO_HF_REPO_ID[language], filename="checkpoint.pth")
             else:
                 assert language in DOWNLOAD_CKPT_URLS
-                ckpt_path = cached_path(DOWNLOAD_CKPT_URLS[language])
+                ckpt_path = _download_url(DOWNLOAD_CKPT_URLS[language])
 
     return torch.load(ckpt_path, map_location=device)

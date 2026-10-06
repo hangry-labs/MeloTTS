@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="{{UI_LOCALE}}" dir="{{UI_DIRECTION}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Melo TTS</title>
+  <link rel="icon" type="image/webp" href="/assets/melotts_favicon.webp">
+  <script>
+    window.__MELOTTS_UI__ = {{UI_BOOTSTRAP}}
+    try {
+      const localeConfig = window.__MELOTTS_UI__
+      const savedLocale = localStorage.getItem(localeConfig.storageKey)
+      const savedEntry = localeConfig.locales.find((item) => item.code === savedLocale)
+      if (location.pathname === '/' && savedEntry && savedEntry.code !== localeConfig.defaultLocale) {
+        location.replace(`${savedEntry.path}${location.search}${location.hash}`)
+      }
+      const savedUi = JSON.parse(sessionStorage.getItem('melotts-ui-state-v1') || 'null')
+      if (savedUi?.headerCollapsed) document.documentElement.dataset.headerCollapsed = 'true'
+    } catch {
+      // Storage is optional in privacy-restricted browsers.
+    }
+  </script>
+  <link rel="stylesheet" href="/static/vendor/lucide/lucide.css">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body>
+  <header class="brand-hero" id="brand-hero" data-collapsed="false">
+    <a class="labs-signature" href="https://hangrylabs.app/" target="_blank" rel="noreferrer" aria-label="Hangry Labs home">
+      <span class="powered-label">Powered by</span>
+      <img class="labs-logo" src="/assets/hangrylabs_logo.webp" alt="Hangry Labs">
+    </a>
+    <img class="collapsed-mascot optional-product-asset" src="/assets/melotts_favicon.webp" alt="Melo TTS icon">
+    <nav class="brand-nav" aria-label="Application links">
+      <div class="brand-links">
+        <a class="primary-link" href="https://hangry-labs.github.io/MeloTTS/examples/" target="_blank" rel="noreferrer"><i class="icon-sparkles"></i><span>Examples</span></a>
+        <a href="/tts/docs"><i class="icon-book-open"></i><span>API docs</span></a>
+        <a href="/tts/voices"><i class="icon-audio-lines"></i><span>Voices</span></a>
+        <a href="https://github.com/hangry-labs/MeloTTS" target="_blank" rel="noreferrer"><i class="icon-git-branch"></i><span>GitHub</span></a>
+        <label class="locale-picker"><span class="visually-hidden">Interface language</span><select id="ui-locale" aria-label="Interface language"></select></label>
+      </div>
+    </nav>
+    <div class="brand-copy">
+      <h1>
+        <img class="product-logo optional-product-asset" src="/assets/melotts_logo_horizontal.webp" alt="Melo TTS - multilingual text to speech">
+        <span class="product-fallback">Melo <strong>Text to Speech</strong></span>
+      </h1>
+    </div>
+    <div class="runtime-badge" id="runtime-badge" data-state="starting">
+      <i class="icon-activity"></i>
+      <div class="runtime-copy"><strong>Inference starting</strong><span id="runtime-model">Waiting for inference service</span></div>
+      <a class="runtime-version" href="https://github.com/hangry-labs/MeloTTS/releases" target="_blank" rel="noreferrer" title="Open Melo TTS releases"><span class="runtime-version-label">UI {{UI_VERSION}}</span>{{UI_BUILD_DETAILS}}</a>
+    </div>
+    <button class="hero-toggle" id="hero-toggle" type="button" aria-controls="brand-hero" aria-expanded="true" aria-label="Collapse header" title="Collapse header"><i class="icon-chevron-up"></i></button>
+  </header>
+
+  <div class="app-tabs" role="tablist" aria-label="Workspace views">
+    <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="generate">Generate</button>
+    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="stream">Stream</button>
+    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="api">API</button>
+    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="system">System</button>
+  </div>
+
+  <main class="workspace" data-view="generate">
+    <aside class="settings-panel">
+      <div class="section-title"><i class="icon-sliders-horizontal"></i><span>Voice</span></div>
+      <label class="field"><span>Language model</span><select id="language"></select></label>
+      <label class="field"><span>Speaker</span><select id="voice"></select></label>
+      <label class="field"><span>Preset</span><select id="preset"></select></label>
+
+      <div class="settings-section">
+        <div class="section-heading-row">
+          <div class="section-title"><i class="icon-audio-waveform"></i><span>Synthesis controls</span></div>
+          <button class="icon-button reset-controls" id="reset-voice-controls" type="button" title="Reset synthesis controls" aria-label="Reset synthesis controls"><i class="icon-rotate-ccw"></i></button>
+        </div>
+        <div class="range-stack">
+          <label class="range-control"><span class="range-heading"><span class="setting-name">Speed</span></span><span class="range-input-row"><input id="speed-slider" type="range" min="0.5" max="2" step="0.05" value="1" data-value-input="speed"><input id="speed" class="number-input" type="number" min="0.5" max="2" step="0.05" value="1" aria-label="Speed value" data-range-input="speed-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name">SDP ratio</span></span><span class="range-input-row"><input id="sdp-ratio-slider" type="range" min="0" max="1" step="0.01" value="0.2" data-value-input="sdp-ratio"><input id="sdp-ratio" class="number-input" type="number" min="0" max="1" step="0.01" value="0.2" aria-label="SDP ratio" data-range-input="sdp-ratio-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name">Acoustic noise</span></span><span class="range-input-row"><input id="noise-scale-slider" type="range" min="0" max="1.5" step="0.01" value="0.6" data-value-input="noise-scale"><input id="noise-scale" class="number-input" type="number" min="0" max="1.5" step="0.01" value="0.6" aria-label="Acoustic noise" data-range-input="noise-scale-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name">Duration noise</span></span><span class="range-input-row"><input id="noise-scale-w-slider" type="range" min="0" max="1.5" step="0.01" value="0.8" data-value-input="noise-scale-w"><input id="noise-scale-w" class="number-input" type="number" min="0" max="1.5" step="0.01" value="0.8" aria-label="Duration noise" data-range-input="noise-scale-w-slider"></span></label>
+        </div>
+      </div>
+      <div class="status-line" id="global-status" data-tone="neutral">Connecting to inference</div>
+    </aside>
+
+    <section class="content-panel">
+      <section class="composer" id="composer">
+        <div class="composer-heading">
+          <div class="section-title"><i class="icon-message-square-text"></i><span>Text</span></div>
+          <div class="composer-actions">
+            <span class="text-metrics" id="text-metrics">0 characters</span>
+            <button class="secondary-button compact-command" id="normalize-button" type="button"><i class="icon-braces"></i><span>Normalize spacing</span></button>
+            <button class="secondary-button compact-command" id="sample-button" type="button"><i class="icon-shuffle"></i><span>Random quote</span></button>
+          </div>
+        </div>
+        <textarea id="text-input" rows="8" spellcheck="true" aria-label="Text to synthesize"></textarea>
+      </section>
+
+      <div class="tab-panel" data-panel="generate">
+        <div class="generate-action-row"><button class="primary-button" id="generate-button" type="button"><i class="icon-audio-lines"></i><span>Generate</span></button></div>
+        <div id="generate-output"></div>
+        <div class="output-options"><label class="compact-field"><span>Output format</span><select id="output-format"></select></label></div>
+      </div>
+
+      <div class="tab-panel" data-panel="stream" hidden>
+        <div class="command-row"><button class="secondary-button stop-button" id="stream-stop" type="button" disabled><i class="icon-square"></i><span>Stop</span></button><button class="primary-button" id="stream-start" type="button"><i class="icon-radio"></i><span>Stream</span></button></div>
+        <div id="stream-output"></div>
+        <div class="stream-progress" id="stream-progress" hidden><span></span></div>
+      </div>
+
+      <div class="tab-panel" data-panel="api" hidden>
+        <div class="view-heading"><div><h2>API</h2><p>Live discovery responses from the running service</p></div><button class="secondary-button" id="api-refresh" type="button"><i class="icon-refresh-cw"></i><span>Refresh</span></button></div>
+        <div class="data-output json-output" id="api-output"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="system" hidden>
+        <div class="view-heading"><div><h2>System</h2><p>Runtime, resident language models, and GPU state</p></div></div>
+        <div class="system-grid">
+          <div class="system-info-stack">
+            <section class="deployment-settings" aria-labelledby="served-models-title">
+              <div class="settings-toolbar"><div><div class="section-title" id="served-models-title"><i class="icon-audio-lines"></i><span>Language models</span></div><p>Load a configured model or keep only one model resident to reclaim memory.</p></div></div>
+              <div class="model-settings-groups" id="model-settings-groups" aria-live="polite"></div>
+            </section>
+            <section class="runtime-system-panel"><div class="section-title"><i class="icon-activity"></i><span>Runtime</span></div><div class="data-output json-output" id="runtime-output"></div></section>
+            <section class="voices-system-panel"><div class="section-title"><i class="icon-boxes"></i><span>Voices</span></div><div class="data-output json-output" id="voices-output"></div></section>
+          </div>
+          <section class="gpu-system-panel" id="gpu-output" aria-live="polite"></section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="alert" hidden></div>
+  <script>
+    document.querySelectorAll('.optional-product-asset').forEach((image) => {
+      image.addEventListener('error', () => image.classList.add('asset-missing'))
+      image.addEventListener('load', () => image.classList.remove('asset-missing'))
+    })
+  </script>
+</body>
+</html>

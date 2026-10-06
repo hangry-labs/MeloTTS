@@ -5,6 +5,7 @@ Main project links:
 - GitHub: https://github.com/hangry-labs/MeloTTS
 - Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
 - Docker Hub: https://hub.docker.com/r/hangrylabs/melotts/tags
+- GitHub Container Registry: https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts
 - Hangry Labs: https://nuggies.website/
 
 ##Tools
@@ -44,14 +45,14 @@ You need docker to be working. (Example : Docker Desktop)
 Open http://localhost:8888
 
 ### Rapid local UI/API loop
-After building an image once, use the bind-mounted tasks for `melo/app.py` edits:
+After building an image once, use the bind-mounted tasks for backend and browser UI edits:
 
 ```bash
 task localdev
 task localapi
 ```
 
-These mount `melo/app.py` into the container so most UI/API changes do not require a Docker rebuild.
+These mount `melo/`, `assets/`, and `VERSION` into the container so most UI/API changes do not require a Docker rebuild. The normal tasks enable all language models; use `task localrunsmall` for the three English model families only.
 
 ### Check API - ping
 ```bash
@@ -158,7 +159,7 @@ winget install --id=astral-sh.uv -e
 Refresh Python dependencies:
 
 ```bash
-uv pip compile requirements.in --upgrade --python-version 3.11 --no-header --no-annotate --output-file requirements.txt
+uv pip compile requirements.in --upgrade --python-version 3.13 --no-header --no-annotate --output-file requirements.txt
 ```
 
 After this command, inspect `requirements.txt`. It may change many indirect packages even if `requirements.in` is small.
@@ -192,7 +193,7 @@ docker exec melotts_local python -m pip check
 Print key runtime versions:
 
 ```bash
-docker exec melotts_local python -c "import gradio, fastapi, starlette, pydantic, torch, torchaudio, transformers, numpy, soundfile; print('gradio', gradio.__version__); print('fastapi', fastapi.__version__); print('starlette', starlette.__version__); print('pydantic', pydantic.__version__); print('torch', torch.__version__); print('torchaudio', torchaudio.__version__); print('transformers', transformers.__version__); print('numpy', numpy.__version__); print('soundfile', soundfile.__version__)"
+docker exec melotts_local python -c "import fastapi, starlette, pydantic, torch, torchaudio, transformers, numpy, soundfile; print('fastapi', fastapi.__version__); print('starlette', starlette.__version__); print('pydantic', pydantic.__version__); print('torch', torch.__version__); print('torchaudio', torchaudio.__version__); print('transformers', transformers.__version__); print('numpy', numpy.__version__); print('soundfile', soundfile.__version__)"
 ```
 
 ## Release
@@ -201,14 +202,26 @@ Root `VERSION` is the release source of truth. A standard patch release can be p
 
     task release
 
-The task requires `VERSION` to be a snapshot such as `v0.0.8-SNAPSHOT`. It commits `VERSION=v0.0.8`, creates tag `v0.0.8`, then commits the next patch snapshot such as `v0.0.9-SNAPSHOT`. Override the release or next version only when needed:
+The task reads the version directly from `VERSION`. It requires a snapshot such as `v1.0.0-SNAPSHOT`, validates the project, commits `VERSION=v1.0.0`, creates annotated tag `v1.0.0`, then commits the next patch snapshot such as `v1.0.1-SNAPSHOT`.
 
-    task release RELEASE_VERSION=v0.0.8 NEXT_VERSION=v0.1.0-SNAPSHOT
+Preview the release without changing files, creating commits, building an image, or making a tag:
+
+    task release DRY_RUN=1
+
+Override only the next development version when the following release should not be a patch:
+
+    task release NEXT_VERSION=v1.1.0-SNAPSHOT
+
+Skip the release validation only when the exact candidate image and checks were already completed:
+
+    task release SKIP_VALIDATION=1
 
 The release task allows untracked local `todo/` files so private notes can stay visible locally. It fails if anything in `todo/` is staged or tracked, because `todo/` is not meant to be released.
 
 Publish the prepared release with:
 
-    task releasepush RELEASE_VERSION=v0.0.8
+    task releasepush RELEASE_VERSION=v1.0.0
 
 This pushes the release tag first so GitHub Actions runs the tag build, then pushes `main` with the next `-SNAPSHOT` version.
+
+The unified `.github/workflows/docker-build.yml` workflow publishes the full and English-family tags to both Docker Hub and GitHub Container Registry. Model preloading is strict: a missing model fails the build instead of publishing an incomplete image.

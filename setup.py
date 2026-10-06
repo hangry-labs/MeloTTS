@@ -11,17 +11,30 @@ with open(version_file, encoding='utf-8') as f:
 package_version = display_version.removeprefix('v').replace('-SNAPSHOT', '.dev0')
 
 with open('requirements.txt') as f:
-    reqs = f.read().splitlines()
+    reqs = [
+        requirement.replace('+cu130', '')
+        for requirement in f.read().splitlines()
+        if requirement and not requirement.startswith('--')
+    ]
 
 setup(
     name='melotts',
     version=package_version,
-    python_requires='>=3.11',
+    python_requires='>=3.13,<3.14',
     packages=find_packages(),
     include_package_data=True,
     install_requires=reqs,
     package_data={
         '': ['*.txt', 'cmudict_*'],
+        'melo.standalone_ui': [
+            'static/*.html',
+            'static/*.css',
+            'static/*.js',
+            'static/locales/*.json',
+            'static/vendor/lucide/*',
+            'static/vendor/wavesurfer/*',
+            'static/vendor/wavesurfer/plugins/*',
+        ],
     },
     entry_points={
         "console_scripts": [

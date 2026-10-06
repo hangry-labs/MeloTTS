@@ -3,17 +3,18 @@ version: '3'
 vars:
   IMAGE: melotts:test
   PORT: '8888'
-  BUILD_ID: ''
   GPU_DEVICE: '0'
   CONTAINER_EN: melotts_en
   CONTAINER_FULL: melotts_full
   CONTAINER_LOCAL: melotts_local
-  LANG_EN: EN
+  LANG_EN: EN,EN_V2,EN_NEWEST
   LANG_FULL: EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR
   TEMP_WAV: '%TEMP%\\melotts_task.wav'
   WAIT_URL: http://localhost:{{.PORT}}/tts/ping
   RELEASE_VERSION: ''
   NEXT_VERSION: ''
+  DRY_RUN: '0'
+  SKIP_VALIDATION: '0'
   RELEASE_REMOTE: origin
   RELEASE_BRANCH: main
 
@@ -26,12 +27,12 @@ tasks:
   image:
     desc: Build local MeloTTS Docker image (FULL profile)
     cmds:
-      - cmd /c docker build --build-arg BUILD_ID={{.BUILD_ID}} --build-arg INIT_DOWNLOADS_PROFILE=FULL -t {{.IMAGE}} .
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-image.ps1 -Profile FULL -Image "{{.IMAGE}}"
 
   imagesmall:
-    desc: Build local MeloTTS Docker image with EN-only preload profile
+    desc: Build local MeloTTS Docker image with the three English model families
     cmds:
-      - cmd /c docker build --build-arg BUILD_ID={{.BUILD_ID}} --build-arg INIT_DOWNLOADS_PROFILE=EN_ONLY -t {{.IMAGE}} .
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-image.ps1 -Profile EN_ONLY -Image "{{.IMAGE}}"
 
   imagerun:
     desc: Run existing image with full language set (default GPU_DEVICE=0)
@@ -64,7 +65,7 @@ tasks:
         ignore_error: true
 
   imagerunsmall:
-    desc: Run existing image with English only (default GPU_DEVICE=0)
+    desc: Run existing image with the three English model families (default GPU_DEVICE=0)
     cmds:
       - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
         ignore_error: true
@@ -74,7 +75,7 @@ tasks:
       - cmd /c docker ps --filter "name={{.CONTAINER_EN}}"
 
   localrun:
-    desc: Run image with local melo/app.py bind-mounted for quick UI/API testing (default GPU_DEVICE=0)
+    desc: Run image with local backend/UI bind-mounted and all languages enabled (default GPU_DEVICE=0)
     cmds:
       - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
         ignore_error: true
@@ -82,38 +83,43 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" -v "{{.TASKFILE_DIR}}\icon.png:/app/icon.png:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -e MELOTTS_UI_DEV=1 -v "{{.TASKFILE_DIR}}\melo:/app/melo:ro" -v "{{.TASKFILE_DIR}}\assets:/app/assets:ro" -v "{{.TASKFILE_DIR}}\VERSION:/app/VERSION:ro" {{.IMAGE}}
+      - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
+
+  localrunsmall:
+    desc: Run the bind-mounted local backend/UI with the three English model families
+    cmds:
+      - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
+        ignore_error: true
+      - cmd: cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
+        ignore_error: true
+      - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
+        ignore_error: true
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -e MELOTTS_UI_DEV=1 -v "{{.TASKFILE_DIR}}\melo:/app/melo:ro" -v "{{.TASKFILE_DIR}}\assets:/app/assets:ro" -v "{{.TASKFILE_DIR}}\VERSION:/app/VERSION:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   localdev:
-    desc: Restart local app.py bind mount, wait for readiness, then open the UI
+    desc: Restart the bind-mounted local backend/UI, wait for readiness, then open it
     cmds:
       - task: localrun
       - task: imagewait
       - task: imageweb
 
   localapi:
-    desc: Restart local app.py bind mount, wait for readiness, then call the TTS API
+    desc: Restart the bind-mounted local backend/UI, wait, then call the TTS API
     cmds:
       - task: localrun
       - task: imageapi
 
   locallogs:
-    desc: Follow logs for the local app.py bind-mounted container
+    desc: Follow logs for the local bind-mounted container
     cmds:
       - cmd /c docker logs -f {{.CONTAINER_LOCAL}}
 
   localrunfull:
-    desc: Run image with local melo/app.py bind-mounted and full language set (default GPU_DEVICE=0)
+    desc: Compatibility alias for localrun (all languages)
     cmds:
-      - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
-        ignore_error: true
-      - cmd: cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
-        ignore_error: true
-      - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
-        ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" -v "{{.TASKFILE_DIR}}\icon.png:/app/icon.png:ro" {{.IMAGE}}
-      - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
+      - task: localrun
 
   imageapi:
     desc: Call TTS API, play generated temp WAV, then remove it
@@ -125,9 +131,9 @@ tasks:
       - 'cmd /c del /f /q {{.TEMP_WAV}}'
 
   release:
-    desc: Release current VERSION snapshot, tag it, then bump to next snapshot
+    desc: Validate and release the current VERSION snapshot, then start the next snapshot
     cmds:
-      - powershell -NoProfile -ExecutionPolicy Bypass -File "{{.TASKFILE_DIR}}\scripts\release.ps1" -Version "{{.RELEASE_VERSION}}" -NextVersion "{{.NEXT_VERSION}}"
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "{{.TASKFILE_DIR}}\scripts\release.ps1" -DryRun "{{.DRY_RUN}}" -NextVersion "{{.NEXT_VERSION}}" -SkipValidation "{{.SKIP_VALIDATION}}"
 
   releasepush:
     desc: Push release tag first, then branch, so GitHub tag workflows build the release

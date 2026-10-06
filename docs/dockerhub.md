@@ -1,6 +1,6 @@
 <p>
   <a href="https://hangry-labs.github.io/MeloTTS/examples/">
-    <img src="https://github.com/hangry-labs/MeloTTS/raw/main/logo.jpg" alt="Hangry Labs Melo T T S logo">
+    <img src="https://github.com/hangry-labs/MeloTTS/raw/main/assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo T T S logo">
   </a>
 </p>
 
