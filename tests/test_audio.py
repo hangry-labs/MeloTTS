@@ -1,13 +1,19 @@
+import io
+import shutil
 import unittest
 from unittest.mock import patch
 
 import numpy as np
+import soundfile as sf
 
 from melo.audio import (
     apply_audio_effects,
     atempo_filters,
     audio_effects_enabled,
     build_audio_effect_filters,
+    encode_audio_bytes,
+    encode_mp3_stream,
+    get_supported_output_formats,
 )
 
 
@@ -54,6 +60,33 @@ class AudioEffectsTests(unittest.TestCase):
         command = run_ffmpeg.call_args.args[0]
         self.assertIn("volume=0.800000", command)
         self.assertIn("f32le", command)
+
+    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required for MP3 streaming")
+    def test_mp3_stream_uses_one_continuous_encoder(self):
+        sample_rate = 22050
+        first = np.zeros(sample_rate // 10, dtype="<i2").tobytes()
+        second = np.full(sample_rate // 10, 1000, dtype="<i2").tobytes()
+
+        chunks = list(encode_mp3_stream(iter((first, second)), sample_rate, read_size=128))
+        encoded = b"".join(chunks)
+        audio, decoded_rate = sf.read(io.BytesIO(encoded))
+
+        self.assertGreater(len(chunks), 1)
+        self.assertNotIn(b"Xing", encoded)
+        self.assertEqual(decoded_rate, sample_rate)
+        self.assertGreater(len(audio), sample_rate // 10)
+
+    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required for Opus and AAC")
+    def test_ffmpeg_output_formats_are_available_and_encoded(self):
+        audio = np.zeros(2205, dtype=np.float32)
+        supported = get_supported_output_formats()
+
+        self.assertIn("opus", supported)
+        self.assertIn("aac", supported)
+        opus = encode_audio_bytes(audio, 22050, "opus").getvalue()
+        aac = encode_audio_bytes(audio, 22050, "aac").getvalue()
+        self.assertTrue(opus.startswith(b"OggS"))
+        self.assertTrue(aac.startswith((b"\xff\xf1", b"\xff\xf9")))
 
 
 if __name__ == "__main__":

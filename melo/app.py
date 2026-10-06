@@ -8,10 +8,11 @@ from pathlib import Path
 
 import soundfile as sf
 import torch
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from melo.api import TTS
 from melo.audio import (
@@ -22,12 +23,30 @@ from melo.audio import (
     apply_audio_effects,
     audio_effects_enabled,
     encode_audio_bytes,
+    encode_mp3_stream,
     encode_pcm_s16le,
     get_supported_output_formats,
     normalize_output_format,
     normalize_stream_format,
 )
-from melo.schemas import LanguageAction, MetricsModel, StreamingTextModel, TextModel
+from melo.openai_compat import (
+    OpenAIAPIError,
+    openai_error_response,
+    openai_model_id,
+    openai_model_list,
+    openai_model_object,
+    openai_tts_request,
+    order_openai_languages,
+    require_openai_api_key,
+    resolve_openai_model_language,
+)
+from melo.schemas import (
+    LanguageAction,
+    MetricsModel,
+    OpenAISpeechRequest,
+    StreamingTextModel,
+    TextModel,
+)
 from melo.split_utils import split_sentence
 from melo.standalone_ui.server import create_app as create_ui_app
 
@@ -426,13 +445,25 @@ def resolve_speaker_id(body, model):
 
 
 api = FastAPI(
-    title="TTS Service API",
-    description="API documentation for the MeloTTS service",
+    title="MeloTTS API",
+    description="OpenAI-compatible speech and native MeloTTS APIs",
     version=VERSION,
     openapi_url="/tts/openapi.json",
     docs_url="/tts/docs",
     redoc_url="/tts/redoc",
 )
+
+
+@api.exception_handler(OpenAIAPIError)
+async def openai_api_error_handler(_request: Request, exc: OpenAIAPIError):
+    return openai_error_response(
+        exc.message,
+        status_code=exc.status_code,
+        error_type=exc.error_type,
+        param=exc.param,
+        code=exc.code,
+        headers=exc.headers,
+    )
 
 
 @api.exception_handler(RequestValidationError)
@@ -443,7 +474,115 @@ async def validation_exception_handler(request, exc):
         for error in errors
     ]
     logger.warning("Validation error for path %s: %s", request.url.path, error_summary)
+    if request.url.path.startswith("/v1/"):
+        first_error = errors[0] if errors else {}
+        location = [str(part) for part in first_error.get("loc", ()) if part != "body"]
+        param = ".".join(location) or None
+        message = first_error.get("msg", "Invalid request")
+        if param:
+            message = f"Invalid '{param}': {message}"
+        return openai_error_response(
+            message,
+            status_code=400,
+            param=param,
+            code="invalid_parameter",
+        )
     return JSONResponse(status_code=422, content={"detail": errors})
+
+
+@api.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if request.url.path.startswith("/v1/"):
+        detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+        return openai_error_response(
+            detail,
+            status_code=exc.status_code,
+            headers=exc.headers,
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
+
+
+def openai_speakers_by_language():
+    return {
+        language: get_speakers_for_language(language)
+        for language in get_loaded_languages()
+    }
+
+
+def openai_voice_list(requested_model: str | None = None):
+    speakers_by_language = openai_speakers_by_language()
+    if requested_model:
+        language = resolve_openai_model_language(requested_model, LANGUAGES)
+        languages = [language] if language else list(speakers_by_language)
+    else:
+        languages = list(speakers_by_language)
+    languages = order_openai_languages(languages)
+
+    voices = {}
+    for language in languages:
+        for speaker in speakers_by_language.get(language, []):
+            voices.setdefault(
+                speaker,
+                {
+                    "id": speaker,
+                    "name": speaker,
+                    "language": language,
+                    "model": openai_model_id(language),
+                },
+            )
+    return list(voices.values())
+
+
+@api.get("/health/live", tags=["Health"])
+async def health_live():
+    return {"status": "ok", "service": "MeloTTS", "version": VERSION}
+
+
+@api.get("/health", tags=["Health"])
+@api.get("/health/ready", tags=["Health"])
+async def health_ready():
+    loaded_languages = get_loaded_languages()
+    ready = bool(loaded_languages)
+    return JSONResponse(
+        {
+            "status": "ok" if ready else "not_ready",
+            "service": "MeloTTS",
+            "version": VERSION,
+            "loaded_models": len(loaded_languages),
+        },
+        status_code=200 if ready else 503,
+    )
+
+
+@api.get(
+    "/v1/models",
+    tags=["OpenAI-compatible API"],
+    dependencies=[Depends(require_openai_api_key)],
+)
+async def openai_models():
+    return {"object": "list", "data": openai_model_list(LANGUAGES)}
+
+
+@api.get(
+    "/v1/models/{requested_model:path}",
+    tags=["OpenAI-compatible API"],
+    dependencies=[Depends(require_openai_api_key)],
+)
+async def openai_model(requested_model: str):
+    return openai_model_object(requested_model, LANGUAGES)
+
+
+@api.get(
+    "/v1/audio/voices",
+    tags=["OpenAI-compatible API"],
+    dependencies=[Depends(require_openai_api_key)],
+)
+async def openai_voices(model: str | None = Query(None)):
+    return {"voices": openai_voice_list(model)}
 
 
 @api.get("/tts/ping")
@@ -492,7 +631,7 @@ async def stream_formats():
         "notes": [
             "The model emits complete sentence segments, not token-level audio.",
             "pcm_s16le is raw mono 16-bit little-endian PCM at the model sample rate.",
-            "mp3 streams are sent as consecutive encoded sentence chunks.",
+            "mp3 uses one continuous encoder fed by sentence-level PCM chunks.",
         ],
     }
 
@@ -604,35 +743,38 @@ def stream_tts_audio(body: TextModel, route_name: str):
 
 
 def iter_stream_audio(body: StreamingTextModel, model: TTS, stream_format: str, sample_rate: int, spk_id: int):
-    with INFERENCE_LOCK:
-        for audio in model.iter_audio_segments(
-            body.text,
-            spk_id,
-            speed=body.speed,
-            sdp_ratio=body.sdp_ratio,
-            noise_scale=body.noise_scale,
-            noise_scale_w=body.noise_scale_w,
-            quiet=True,
-            include_silence=True,
-        ):
-            if audio_effects_enabled(
-                body.pitch_semitones,
-                body.tempo,
-                body.volume,
-                body.normalize,
+    def pcm_chunks():
+        with INFERENCE_LOCK:
+            for audio in model.iter_audio_segments(
+                body.text,
+                spk_id,
+                speed=body.speed,
+                sdp_ratio=body.sdp_ratio,
+                noise_scale=body.noise_scale,
+                noise_scale_w=body.noise_scale_w,
+                quiet=True,
+                include_silence=True,
             ):
-                audio = apply_audio_effects(
-                    audio,
-                    sample_rate,
-                    pitch_semitones=body.pitch_semitones,
-                    tempo=body.tempo,
-                    volume=body.volume,
-                    normalize=body.normalize and bool(audio.any()),
-                )
-            if stream_format == "pcm_s16le":
+                if audio_effects_enabled(
+                    body.pitch_semitones,
+                    body.tempo,
+                    body.volume,
+                    body.normalize,
+                ):
+                    audio = apply_audio_effects(
+                        audio,
+                        sample_rate,
+                        pitch_semitones=body.pitch_semitones,
+                        tempo=body.tempo,
+                        volume=body.volume,
+                        normalize=body.normalize and bool(audio.any()),
+                    )
                 yield encode_pcm_s16le(audio)
-            elif stream_format == "mp3":
-                yield encode_audio_bytes(audio, sample_rate, "mp3").getvalue()
+
+    if stream_format == "pcm_s16le":
+        yield from pcm_chunks()
+    elif stream_format == "mp3":
+        yield from encode_mp3_stream(pcm_chunks(), sample_rate)
 
 
 def stream_tts_audio_segments(body: StreamingTextModel, route_name: str):
@@ -676,6 +818,43 @@ def generate_tts(body: TextModel):
 @api.post("/tts/stream")
 def stream_tts(body: StreamingTextModel):
     return stream_tts_audio_segments(body, "/tts/stream")
+
+
+@api.post(
+    "/v1/audio/speech",
+    tags=["OpenAI-compatible API"],
+    dependencies=[Depends(require_openai_api_key)],
+)
+def openai_speech(body: OpenAISpeechRequest):
+    request_body, language = openai_tts_request(
+        body,
+        LANGUAGES,
+        openai_speakers_by_language(),
+    )
+    try:
+        if isinstance(request_body, StreamingTextModel):
+            response = stream_tts_audio_segments(request_body, "/v1/audio/speech")
+        else:
+            response = stream_tts_audio(request_body, "/v1/audio/speech")
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.exception("OpenAI-compatible speech generation failed")
+        raise OpenAIAPIError(
+            "Speech generation failed.",
+            status_code=500,
+            error_type="server_error",
+            code="generation_failed",
+        ) from error
+    if response.status_code >= 400:
+        raise OpenAIAPIError(
+            "Speech generation failed.",
+            status_code=response.status_code,
+            error_type="server_error",
+            code="generation_failed",
+        )
+    response.headers["X-MeloTTS-Model"] = openai_model_id(language)
+    return response
 
 
 @api.post("/tts/convert/tts", deprecated=True)

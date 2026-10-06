@@ -56,7 +56,7 @@ class TextModel(BaseModel):
         alias="format",
         description=(
             "Response audio format. Defaults to wav for backward compatibility. "
-            "Supported: wav, mp3, flac, ogg."
+            "Supported: wav, mp3, flac, ogg, opus, aac."
         ),
     )
 
@@ -68,6 +68,26 @@ class StreamingTextModel(TextModel):
             "Streaming response format. Defaults to raw PCM for true chunked streaming. "
             "Supported: pcm_s16le, mp3."
         ),
+    )
+
+
+class OpenAISpeechRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    model: str = Field(..., min_length=1, description="OpenAI-compatible Melo model ID.")
+    input: str = Field(..., min_length=1, description="Text to synthesize.")
+    voice: str | dict[str, str] = Field(
+        ..., description="Melo speaker ID returned by /v1/audio/voices."
+    )
+    response_format: str = Field(
+        "mp3", description="Supported: mp3, opus, aac, flac, wav, pcm."
+    )
+    speed: float = Field(1.0, ge=0.25, le=4.0)
+    instructions: str | None = Field(
+        None, description="Reserved for OpenAI compatibility; not supported by MeloTTS."
+    )
+    stream_format: str = Field(
+        "audio", description="Only the OpenAI audio stream format is supported."
     )
 
 

@@ -560,7 +560,7 @@ function renderJsonTree(container, value, expandDepth = 1) {
 
 async function refreshApiStatus() {
   $('#api-output').textContent = 'Loading...'
-  const paths = ['/tts/ping', '/tts/status', '/tts/defaults', '/tts/formats', '/tts/stream-formats', '/tts/languages', '/tts/voices']
+  const paths = ['/tts/ping', '/tts/status', '/tts/defaults', '/tts/formats', '/tts/stream-formats', '/tts/languages', '/tts/voices', '/v1/models', '/v1/audio/voices']
   const values = await Promise.all(paths.map(async (path) => {
     try { return [path, await fetchJson(path)] } catch (error) { return [path, { error: errorMessage(error) }] }
   }))

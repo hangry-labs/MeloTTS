@@ -63,6 +63,26 @@ These mount `melo/`, `assets/`, and `VERSION` into the container so most UI/API 
 curl -v http://localhost:8888/tts/ping
 ```
 
+### Check OpenAI-compatible API
+
+List models and loaded voices:
+
+```bash
+curl -v http://localhost:8888/v1/models
+curl -v http://localhost:8888/v1/audio/voices
+```
+
+Generate the default sentence-streamed MP3 response:
+
+```bash
+curl -v -X POST http://localhost:8888/v1/audio/speech ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"melotts\",\"input\":\"Hello from the OpenAI-compatible API.\",\"voice\":\"EN-Newest\"}" ^
+  --output openai-hello.mp3
+```
+
+Set `MELOTTS_API_KEY` in the server environment only when bearer authentication is required. OpenAI SDKs may still require a non-empty local placeholder key even when the server does not enforce one.
+
 ### Check API - tts
 ```bash
 curl -v -X POST http://localhost:8888/tts/generate ^

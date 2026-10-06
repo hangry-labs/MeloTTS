@@ -49,6 +49,7 @@ The container includes the web UI and the HTTP API on the same port.
 
 - Browser UI for manual text-to-speech generation
 - HTTP API for applications and automation
+- OpenAI-compatible model, voice, and speech endpoints
 - MP3 output from the UI by default
 - Backward-compatible WAV API responses unless `format` is requested
 - Sentence-level streaming API for applications that want earlier audio delivery
@@ -59,7 +60,18 @@ The container includes the web UI and the HTTP API on the same port.
 
 ## API Example
 
-Default API behavior returns WAV for backward compatibility:
+OpenAI-compatible applications can use `http://localhost:8888/v1` as their API base URL. MP3 is returned by default:
+
+```bash
+curl -X POST "http://localhost:8888/v1/audio/speech" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"melotts\",\"input\":\"Hello from Hangry Labs Melo T T S\",\"voice\":\"EN-Newest\"}" ^
+  -o hello.mp3
+```
+
+Discover models at `/v1/models` and loaded voices at `/v1/audio/voices`. MP3 and raw PCM use sentence-level streaming; Opus, AAC, WAV, and FLAC are complete-file responses. Set `MELOTTS_API_KEY` to require bearer authentication.
+
+The native API provides Melo-specific controls. Default native API behavior returns WAV for backward compatibility:
 
 ```bash
 curl -X POST "http://localhost:8888/tts/generate" ^
@@ -94,7 +106,7 @@ curl -X POST "http://localhost:8888/tts/stream" ^
   -o hello.pcm
 ```
 
-Streaming defaults to raw mono `pcm_s16le` chunks at the model sample rate. You can also request MP3 sentence chunks with `"stream_format":"mp3"` when MP3 encoding is available. List streaming formats with:
+Streaming defaults to raw mono `pcm_s16le` chunks at the model sample rate. You can also request one continuous MP3 stream fed by sentence-level audio with `"stream_format":"mp3"`. List streaming formats with:
 
 ```bash
 curl http://localhost:8888/tts/stream-formats
@@ -121,6 +133,8 @@ docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8_en
 - Discussions: https://github.com/hangry-labs/MeloTTS/discussions
 
 Docker Hub comments are not monitored regularly. GitHub Issues are the best place to report bugs.
+
+CPU execution and NVIDIA CUDA acceleration are supported. Other GPU or accelerator backends are not advertised without suitable hardware for end-to-end testing; contact the project through GitHub Discussions to provide or sponsor test hardware.
 
 ## Attribution
 

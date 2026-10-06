@@ -89,7 +89,26 @@ docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:v0.1.0_en
 ## API Usage
 
 <details>
-<summary>Native generation, controls, streaming, and discovery</summary>
+<summary>OpenAI-compatible and native APIs, controls, streaming, and discovery</summary>
+
+### OpenAI-Compatible API
+
+Applications that already support OpenAI text to speech can use `http://localhost:8888/v1` as their API base URL. MP3 is the default:
+
+```bash
+curl -X POST "http://localhost:8888/v1/audio/speech" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"melotts","input":"Hello from Melo Text to Speech.","voice":"EN-Newest"}' \
+  -o output.mp3
+```
+
+`GET /v1/models` lists the generic `melotts` model plus every configured language-model ID. `GET /v1/audio/voices` returns the loaded speakers in the object form expected by voice-picking clients; pass `?model=melotts-en-newest` to filter the list. The generic model selects the best loaded model for the requested speaker, while an exact model ID provides deterministic model selection.
+
+The compatibility endpoint supports `mp3`, `opus`, `aac`, `flac`, `wav`, and `pcm`, plus the OpenAI speed range from `0.25` to `4.0`. MP3 and raw PCM responses use Melo's real sentence-level streaming path; Opus, AAC, WAV, and FLAC are complete-file responses. Natural-language `instructions`, SSE speech events, and unknown formats fail explicitly rather than being ignored.
+
+Bearer authentication is optional. Set `MELOTTS_API_KEY` on the server to require `Authorization: Bearer <key>` for `/v1` routes; without it, local clients may use any non-empty placeholder key required by their SDK.
+
+### Native API
 
 Generate compact MP3 audio:
 
@@ -128,7 +147,7 @@ curl -X POST "http://localhost:8888/tts/stream" \
   -o output.mp3
 ```
 
-Streaming is sentence-level because the model emits complete sentence segments rather than token-level audio. `pcm_s16le` and MP3 streams are supported; output controls are applied per sentence chunk.
+Streaming is sentence-level because the model emits complete sentence segments rather than token-level audio. `pcm_s16le` chunks and a continuous MP3 stream are supported; output controls are applied per sentence chunk.
 
 ### Discovery and Operations
 
@@ -161,6 +180,8 @@ This project is maintained for usability and convenience by a small team. Evalua
 ## Support and Issues
 
 Open a [GitHub issue](https://github.com/hangry-labs/MeloTTS/issues) for reproducible bugs or feature requests, and include logs, error messages, runtime details, and reproduction steps. Use [GitHub Discussions](https://github.com/hangry-labs/MeloTTS/discussions) for general questions and design ideas.
+
+CPU execution is supported. NVIDIA CUDA is currently the only officially supported and tested GPU acceleration backend because it is the hardware available to the maintainers. Intel XPU, AMD ROCm, Apple MPS, NPUs, and other accelerators are not advertised as supported without end-to-end hardware validation. Anyone who wants another backend maintained can open a discussion and provide or sponsor suitable test hardware.
 
 ---
 
@@ -205,6 +226,7 @@ task localdev
 ## Version History
 
 ### v1.0.0 (in development)
+- Added a strict OpenAI-compatible API with model and voice discovery, optional bearer authentication, OpenAI-shaped errors, MP3 defaults, the full `0.25`-`4.0` speed range, and sentence-streamed MP3/PCM responses.
 - Replaced the Gradio interface with the shared Hangry Labs standalone FastAPI UI architecture used by KokoroTTS.
 - Added responsive expanded/compact branding, local Lucide icons, WaveSurfer playback and trimming, Generate/Stream/API/System workspaces, model residency controls, and complete demand-driven GPU telemetry with history, hover details, and bounded sampling.
 - Added `POST /tts/load` for loading configured models on demand; existing API behavior and the WAV default remain backward compatible.

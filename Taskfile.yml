@@ -44,7 +44,7 @@ tasks:
   lint:
     desc: Lint the actively maintained Python application surface
     cmds:
-      - ruff check melo/app.py melo/audio.py melo/schemas.py melo/main.py melo/standalone_ui/server.py melo/standalone_ui/gpu.py scripts/check-wheel.py tests
+      - ruff check melo/app.py melo/audio.py melo/openai_compat.py melo/schemas.py melo/main.py melo/standalone_ui/server.py melo/standalone_ui/gpu.py scripts/check-wheel.py tests
 
   test:
     desc: Run unit and repository-contract tests
