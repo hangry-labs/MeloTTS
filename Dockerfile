@@ -78,7 +78,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsndfile1 curl \
+    libsndfile1 curl ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 ARG APP_VERSION=unknown

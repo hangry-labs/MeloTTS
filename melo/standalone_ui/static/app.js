@@ -228,11 +228,35 @@ function applyPreset(name = $('#preset').value) {
   setControlValue('noise-scale-w', preset.noise_scale_w)
 }
 
+function applyAudioControlDefaults() {
+  const controls = state.defaults?.audio_controls || {
+    pitch_semitones: 0,
+    tempo: 1,
+    volume: 1,
+    normalize: false,
+  }
+  setControlValue('pitch', controls.pitch_semitones)
+  setControlValue('tempo', controls.tempo)
+  setControlValue('volume', controls.volume)
+  $('#normalize').checked = controls.normalize
+  updateNormalizationState()
+}
+
+function updateNormalizationState() {
+  const normalized = $('#normalize').checked
+  $('#volume').disabled = normalized
+  $('#volume-slider').disabled = normalized
+  $('#volume-control').classList.toggle('setting-disabled', normalized)
+}
+
+$('#normalize').addEventListener('change', updateNormalizationState)
+
 $('#preset').addEventListener('change', () => applyPreset())
 $('#reset-voice-controls').addEventListener('click', () => {
   $('#preset').value = Object.hasOwn(state.defaults?.presets || {}, 'Balanced') ? 'Balanced' : $('#preset').options[0]?.value
   applyPreset()
-  setStatus('Synthesis controls reset', 'success')
+  applyAudioControlDefaults()
+  setStatus('Voice controls reset', 'success')
 })
 
 function updateTextMetrics() {
@@ -284,6 +308,10 @@ function requestPayload(outputFormat = $('#output-format').value) {
     sdp_ratio: Number($('#sdp-ratio').value),
     noise_scale: Number($('#noise-scale').value),
     noise_scale_w: Number($('#noise-scale-w').value),
+    pitch_semitones: Number($('#pitch').value),
+    tempo: Number($('#tempo').value),
+    volume: $('#normalize').checked ? 1 : Number($('#volume').value),
+    normalize: $('#normalize').checked,
     format: outputFormat,
   }
 }
@@ -888,6 +916,7 @@ async function loadWorkspace(setInitialText = true) {
   )
   if (setInitialText) $('#text-input').value = defaults.texts?.[$('#language').value] || ''
   applyPreset(selectedPreset() ? $('#preset').value : Object.keys(defaults.presets || {})[0])
+  applyAudioControlDefaults()
   updateTextMetrics()
   updateRuntime(status)
   setStatus('Ready', 'success')

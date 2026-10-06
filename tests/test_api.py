@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 import soundfile as sf
@@ -106,6 +107,44 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.headers["x-melotts-format"], "flac")
         self.assertEqual(invalid.status_code, 400)
         self.assertEqual(invalid.json()["detail"], "Invalid speaker_id 'missing'")
+
+    @patch("melo.app.apply_audio_effects")
+    def test_generate_applies_optional_output_controls(self, apply_audio_effects):
+        apply_audio_effects.side_effect = lambda audio, _sample_rate, **_controls: audio
+
+        response = self.client.post(
+            "/tts/generate",
+            json=self.request_body(
+                pitch_semitones=2,
+                tempo=1.1,
+                volume=0.9,
+                normalize=True,
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        controls = apply_audio_effects.call_args.kwargs
+        self.assertEqual(controls["pitch_semitones"], 2)
+        self.assertEqual(controls["tempo"], 1.1)
+        self.assertEqual(controls["volume"], 0.9)
+        self.assertTrue(controls["normalize"])
+
+    def test_defaults_describe_native_and_post_processing_controls(self):
+        response = self.client.get("/tts/defaults")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["audio_controls"]["pitch_semitones"], 0)
+        self.assertIn("sdp_ratio", payload["capabilities"]["native_controls"])
+        self.assertFalse(payload["capabilities"]["named_emotions"])
+
+    def test_output_control_ranges_are_validated(self):
+        response = self.client.post(
+            "/tts/generate",
+            json=self.request_body(pitch_semitones=13),
+        )
+
+        self.assertEqual(response.status_code, 422)
 
     def test_validation_logs_do_not_include_request_text(self):
         private_text = "do-not-log-this-validation-payload"

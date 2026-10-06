@@ -6,7 +6,7 @@ Main project links:
 - Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
 - Docker Hub: https://hub.docker.com/r/hangrylabs/melotts/tags
 - GitHub Container Registry: https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts
-- Hangry Labs: https://nuggies.website/
+- Hangry Labs: https://hangrylabs.app/
 
 ##Tools
 
@@ -24,6 +24,10 @@ Main project links:
 `docker run --gpus all -p 8888:8888 hangrylabs/melotts`
 
 ## Test locally
+
+Install FFmpeg if you run the Python service outside Docker and want to use pitch, tempo,
+volume, or loudness normalization. Neutral output controls do not invoke FFmpeg. The Docker
+images already include it.
 
 ### Build image  
 You need docker to be working. (Example : Docker Desktop)  

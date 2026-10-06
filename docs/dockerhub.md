@@ -23,7 +23,7 @@ The examples page includes MP3 previews for the main English voices plus Spanish
 - Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
 - GitHub repository: https://github.com/hangry-labs/MeloTTS
 - Issues and support: https://github.com/hangry-labs/MeloTTS/issues
-- Hangry Labs: https://nuggies.website/
+- Hangry Labs: https://hangrylabs.app/
 
 ## Quick Start
 
@@ -52,6 +52,7 @@ The container includes the web UI and the HTTP API on the same port.
 - MP3 output from the UI by default
 - Backward-compatible WAV API responses unless `format` is requested
 - Sentence-level streaming API for applications that want earlier audio delivery
+- Native speed and variation controls plus optional pitch, tempo, volume, and loudness normalization
 - Full multilingual image and smaller EN-focused image
 - GPU support when Docker/NVIDIA support is available
 - Offline-friendly usage once the image and baked model assets are available locally
@@ -115,7 +116,7 @@ docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8_en
 
 - Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
 - GitHub: https://github.com/hangry-labs/MeloTTS
-- Hangry Labs: https://nuggies.website/
+- Hangry Labs: https://hangrylabs.app/
 - Issues: https://github.com/hangry-labs/MeloTTS/issues
 - Discussions: https://github.com/hangry-labs/MeloTTS/discussions
 

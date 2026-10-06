@@ -1,90 +1,97 @@
 <p align="center">
-  <a href="https://nuggies.website/">
+  <a href="https://hangrylabs.app/">
     <img src="assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo T T S logo" width="1000">
   </a>
 </p>
 
 # Hangry Labs Melo T T S
 
-Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
+Easy-to-run, offline-friendly multilingual text to speech with a complete browser workspace and HTTP API in one Docker image.
 
-This Hangry Labs fork is made for ease of use. The aim is that anyone should be able to run text to speech without friction: a person trying it at home, a developer wiring it into an app, or a professional evaluating it for a production environment. Install Docker, run one command from Quick Start, open the local link, and start generating speech.
+This Hangry Labs fork turns the original MeloTTS research project into a practical application for home users, developers, and production evaluation. The full image contains every supported language model; the smaller English-family image contains the three English model generations. Once downloaded, either image can run without live model downloads.
 
-You get:
-- A browser UI for manual text-to-speech generation
-- An HTTP API for your own applications and tools
-- No manual Python, model, or audio dependency setup
-- Full multilingual images and smaller EN-focused images
-- Offline-friendly usage: download an image once, keep it, and run it later without relying on live model downloads
+Official images are published on [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GitHub Container Registry](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
 
-Official container images are published to [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GitHub Container Registry](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
+## Contents
 
-Voice examples are available here: [hangry-labs.github.io/MeloTTS/examples](https://hangry-labs.github.io/MeloTTS/examples/).
-
-Hangry Labs home: [nuggies.website](https://nuggies.website/).
+- [Listen and Have a Look](#listen-and-have-a-look)
+- [Quick Start](#quick-start)
+- [API Usage](#api-usage)
+- [About This Fork](#about-this-fork)
+- [Support and Issues](#support-and-issues)
+- [Docker Images](#docker-images)
+- [Local Development](#local-development)
+- [Version History](#version-history)
+- [License](#license)
 
 ---
 
-## Voice Examples
+## Listen and Have a Look
 
-Preview MP3 samples from the full multilingual image:
+[Open the interactive voice examples](https://hangry-labs.github.io/MeloTTS/examples/) to compare every bundled language and English accent. The browser application at `http://localhost:8888` adds waveform playback and trimming, generation and sentence-streaming workspaces, model controls, output controls, live API discovery, model residency management, and GPU telemetry.
 
-[Open the voice examples page](https://hangry-labs.github.io/MeloTTS/examples/)
+<p align="center">
+  <a href="assets/ui.webp">
+    <img src="assets/ui.webp" alt="Melo T T S browser workspace with model and output controls" width="1200">
+  </a>
+</p>
 
-GitHub does not render embedded audio players directly in README files, so direct MP3 links are also provided below.
+Featured samples: [British English](examples/melotts-en-br.mp3), [newest English model](examples/melotts-en-newest.mp3), [Spanish](examples/melotts-es.mp3), [French](examples/melotts-fr.mp3), [Chinese](examples/melotts-zh.mp3), [Japanese](examples/melotts-jp.mp3), and [Korean](examples/melotts-kr.mp3).
 
-| Language | Sample |
+<details>
+<summary>All direct MP3 links</summary>
+
+| Language or model | Sample |
 | --- | --- |
-| English British | [Listen to MP3](examples/melotts-en-br.mp3) |
-| English newest | [Listen to MP3](examples/melotts-en-newest.mp3) |
-| English v2 | [Listen to MP3](examples/melotts-en-v2.mp3) |
-| English | [Listen to MP3](examples/melotts-en.mp3) |
-| English Indian | [Listen to MP3](examples/melotts-en-india.mp3) |
-| English Australian | [Listen to MP3](examples/melotts-en-au.mp3) |
-| English American | [Listen to MP3](examples/melotts-en-us.mp3) |
-| English default | [Listen to MP3](examples/melotts-en-default.mp3) |
-| Spanish | [Listen to MP3](examples/melotts-es.mp3) |
-| French | [Listen to MP3](examples/melotts-fr.mp3) |
-| Chinese | [Listen to MP3](examples/melotts-zh.mp3) |
-| Japanese | [Listen to MP3](examples/melotts-jp.mp3) |
-| Korean | [Listen to MP3](examples/melotts-kr.mp3) |
+| English British | [Listen](examples/melotts-en-br.mp3) |
+| English newest | [Listen](examples/melotts-en-newest.mp3) |
+| English v2 | [Listen](examples/melotts-en-v2.mp3) |
+| English | [Listen](examples/melotts-en.mp3) |
+| English Indian | [Listen](examples/melotts-en-india.mp3) |
+| English Australian | [Listen](examples/melotts-en-au.mp3) |
+| English American | [Listen](examples/melotts-en-us.mp3) |
+| English default | [Listen](examples/melotts-en-default.mp3) |
+| Spanish | [Listen](examples/melotts-es.mp3) |
+| French | [Listen](examples/melotts-fr.mp3) |
+| Chinese | [Listen](examples/melotts-zh.mp3) |
+| Japanese | [Listen](examples/melotts-jp.mp3) |
+| Korean | [Listen](examples/melotts-kr.mp3) |
+
+</details>
 
 ---
 
 ## Quick Start
 
-```bash
-docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest
-```
+### Current Snapshot
 
-EN-focused build (smaller target image):
+Run the complete multilingual image with NVIDIA GPU acceleration:
 
 ```bash
-docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest_en
+docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:latest
 ```
 
-Run on a specific GPU (example: GPU index `1`):
+Use `hangrylabs/melotts:latest_en` for the smaller image containing `EN`, `EN_V2`, and `EN_NEWEST`. Omit `--gpus all` to run on CPU, or use `--gpus "device=1"` to select a specific GPU.
+
+Then open [http://localhost:8888](http://localhost:8888). The UI and API are served together; interactive OpenAPI documentation is available at [http://localhost:8888/tts/docs](http://localhost:8888/tts/docs).
+
+### Stable Release
+
+Pin a release tag for repeatable deployments. Full images use `<version>` and English-family images use `<version>_en`:
 
 ```bash
-docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts:latest
+docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:v0.1.0
+docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:v0.1.0_en
 ```
-
-Then open: **[http://localhost:8888](http://localhost:8888)**
 
 ---
 
-## API Usage Example
+## API Usage
 
-```bash
-curl -X POST "http://localhost:8888/tts/generate" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Hello world!","language":"EN","speaker_id":"EN-BR"}' \
-  -o output.wav
-```
+<details>
+<summary>Native generation, controls, streaming, and discovery</summary>
 
-The API remains backward compatible: when `format` is omitted, it returns WAV audio as before.
-The legacy `POST /tts/convert/tts` endpoint still works, but new integrations should use `POST /tts/generate`.
-To request a smaller response, add `format` with one of `mp3`, `flac`, or `ogg`:
+Generate compact MP3 audio:
 
 ```bash
 curl -X POST "http://localhost:8888/tts/generate" \
@@ -93,67 +100,109 @@ curl -X POST "http://localhost:8888/tts/generate" \
   -o output.mp3
 ```
 
-Available formats are exposed at `GET /tts/formats`.
-The web UI defaults to MP3 downloads because it is a more practical size for interactive use.
+The API defaults remain backward compatible: omitted controls are neutral, and omitted `format` returns WAV. The deprecated `POST /tts/convert/tts` route remains available for existing clients.
 
-For applications that want audio before the full request is finished, use sentence-level streaming:
+### Synthesis Controls
+
+| Field | Range and default | Behavior |
+| --- | --- | --- |
+| `speed` | `0.5` to `2.0`, default `1.0` | Native model speaking speed. |
+| `sdp_ratio` | `0.0` to `1.0`, default `0.2` | Blend between deterministic and stochastic duration prediction. |
+| `noise_scale` | `0.0` to `1.5`, default `0.6` | Native acoustic sampling variation. |
+| `noise_scale_w` | `0.0` to `1.5`, default `0.8` | Native duration sampling variation. |
+| `pitch_semitones` | `-12` to `12`, default `0` | Optional FFmpeg pitch shift after synthesis. |
+| `tempo` | `0.5` to `2.0`, default `1.0` | Optional FFmpeg tempo change independent of pitch. |
+| `volume` | `0.0` to `2.0`, default `1.0` | Optional output volume multiplier. |
+| `normalize` | boolean, default `false` | Optional EBU-style loudness normalization. |
+
+MeloTTS does not expose a trained emotion label, style token, reference-audio prompt, or direct emotional-intensity input. The stochastic controls can vary delivery, and pitch/tempo can reshape the result, but the application does not mislabel those effects as native emotion control.
+
+Neutral output-control defaults skip the extra FFmpeg pass. For local non-Docker use, FFmpeg must be installed only when pitch, tempo, volume, or normalization is changed.
+
+### Streaming
 
 ```bash
 curl -X POST "http://localhost:8888/tts/stream" \
   -H "Content-Type: application/json" \
-  -d '{"text":"First sentence. Second sentence.","language":"EN","speaker_id":"EN-BR"}' \
-  -o output.pcm
+  -d '{"text":"First sentence. Second sentence.","language":"EN","speaker_id":"EN-BR","stream_format":"mp3"}' \
+  -o output.mp3
 ```
 
-`POST /tts/stream` defaults to raw mono `pcm_s16le` chunks at the model sample rate. It can also return consecutive MP3 sentence chunks with `"stream_format":"mp3"` when MP3 encoding is available. Streaming formats are exposed at `GET /tts/stream-formats`.
+Streaming is sentence-level because the model emits complete sentence segments rather than token-level audio. `pcm_s16le` and MP3 streams are supported; output controls are applied per sentence chunk.
+
+### Discovery and Operations
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /tts/status` | Version, build, runtime, languages, controls, and formats. |
+| `GET /tts/defaults` | UI texts, presets, neutral output controls, and capability metadata. |
+| `GET /tts/languages` | Configured and loaded language models. |
+| `GET /tts/voices` | Language/model inventory and speakers. |
+| `GET /tts/speakers?language=EN` | Speakers for one language model. |
+| `GET /tts/formats` | File output formats and aliases. |
+| `GET /tts/stream-formats` | Streaming formats and transport notes. |
+| `POST /tts/load` | Load a configured model on demand. |
+| `POST /tts/purge` | Keep one loaded model and release the others. |
+
+The running service is the source of truth for exact schemas: open `/tts/docs` or inspect `/tts/openapi.json`.
+
+</details>
 
 ---
 
 ## About This Fork
 
-This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).
-The original work is licensed under the MIT License, and we thank the authors for their excellent research and contributions.
+This independently maintained Hangry Labs fork focuses on simple deployment, offline operation, a complete browser UI, and application-friendly APIs. It is based on the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by Wenliang Zhao, Xumin Yu, and Zengyi Qin.
 
-While the original MeloTTS is an impressive research project, this Hangry Labs fork focuses on making it simple to run and integrate: Docker image, included UI, and API support out of the box.
+The original project and this fork are MIT licensed. Original attribution is preserved in [`LICENSE`](LICENSE); Hangry Labs copyright covers the Docker packaging, browser application, API integration, documentation, release tooling, and other fork-specific work.
 
-License and attribution are preserved in [`LICENSE`](LICENSE). The original MeloTTS copyright remains with MyShell.ai; this fork adds separate Hangry Labs copyright for the Docker packaging, Web UI/API integration, documentation, release tooling, and other modifications.
+This project is maintained for usability and convenience by a small team. Evaluate security, capacity, observability, and availability requirements before critical production deployment.
 
-⚠️ **Note:** This project is maintained for usability and convenience by a single developer. It is not a production-hardened system and may require additional work for critical deployments.
+## Support and Issues
 
-✅ **Offline Mode:** Supported when models are baked into the Docker image or mounted through a volume.
-
-## Support & Issues
-If you encounter bugs, have feature requests, or need help using Hangry Labs Melo T T S:
-- Please open a new [GitHub Issue](https://github.com/hangry-labs/MeloTTS/issues) with as much detail as possible
-- Include error messages, logs, and reproduction steps if applicable
-- For general questions or ideas, you can also use the [Discussions](https://github.com/hangry-labs/MeloTTS/discussions) tab
+Open a [GitHub issue](https://github.com/hangry-labs/MeloTTS/issues) for reproducible bugs or feature requests, and include logs, error messages, runtime details, and reproduction steps. Use [GitHub Discussions](https://github.com/hangry-labs/MeloTTS/discussions) for general questions and design ideas.
 
 ---
 
-## Docker Features
-- Pinned dependencies for reproducible builds
-- Preloaded models for instant offline use (optional)
-- GPU acceleration when available
-- HTTP API + web UI in one container
-- Split image strategy: full multilingual images use the plain version tag; EN-focused images use `*_en`
+## Docker Images
+
+<details>
+<summary>Registries, variants, and offline behavior</summary>
+
+Images are published to [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GHCR](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
+
+| Variant | Current tag | Release tag | Included models |
+| --- | --- | --- | --- |
+| Full | `latest` | `<version>` | `EN`, `EN_V2`, `EN_NEWEST`, `ES`, `FR`, `ZH`, `JP`, `KR` |
+| English family | `latest_en` | `<version>_en` | `EN`, `EN_V2`, `EN_NEWEST` |
+
+Both variants include the browser UI and HTTP API, pinned Python dependencies, audio tooling, and baked model assets. After the initial pull they can run without Hugging Face access. Set `TTS_LANGUAGES` to limit which baked models are loaded at startup.
+
+</details>
 
 ---
 
-## Docker Hub
-You can explore all available Hangry Labs Melo T T S container images on [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags).
+## Local Development
 
-This is useful if you want to:
-- Select a specific version of MeloTTS for compatibility
-- Check the latest available builds before pulling
-- Verify image tags for deployment
+<details>
+<summary>Validation and Docker workflows</summary>
 
-Current tag pattern:
-- EN-focused image: `latest_en`, `<version>_en`
-- Full multilingual image: `latest`, `<version>`
+This repository targets Python 3.13. Install [Task](https://taskfile.dev/) and `uv`, then use the repository workflows:
+
+```bash
+task doctor
+task validate
+task image
+task localdev
+```
+
+`task image` builds the full local image. `task imagesmall` builds the English-family image. After one image build, `task localdev` bind-mounts `melo/`, `assets/`, and `VERSION` for rapid backend and UI iteration without rebuilding model layers. See [`docs/notes.md`](docs/notes.md) for copy-paste setup, dependency-resolution, testing, and release notes.
+
+</details>
 
 ---
 
-## 📜 Version History
+## Version History
 
 ### v1.0.0 (in development)
 - Replaced the Gradio interface with the shared Hangry Labs standalone FastAPI UI architecture used by KokoroTTS.
@@ -171,6 +220,12 @@ Current tag pattern:
 - Fixed CLI speaker selection for every English model family instead of assuming `EN-Default` exists.
 - Added API, CLI, package-contract, and wheel-content tests plus standard `doctor`, `deps`, `lint`, `test`, `package`, and `validate` Taskfile workflows.
 - Regenerated the deployment lock for Linux/Python 3.13 and tightened Docker build context exclusions for tests and private agent files.
+- Added optional pitch, tempo, volume, and loudness-normalization controls to the UI, generation API, and sentence-streaming API while keeping neutral defaults backward compatible.
+- Documented the distinction between native Melo synthesis controls, post-processing controls, and unsupported named-emotion conditioning.
+- Reorganized the README around examples, startup, API use, images, development, project context, and release history.
+
+<details>
+<summary>Earlier releases</summary>
 
 ### v0.1.0 (11.05.2026)
 - Moved the active Docker runtime/build baseline from `python:3.10-slim` to `python:3.11-slim`.
@@ -257,6 +312,7 @@ Current tag pattern:
 - Run with:
   ```bash
   docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.4
+  ```
 
 ### v0.0.3 (25.07.2025)
 - Optimized docker build to use layer caching so we can build stuff fast after the initial build
@@ -267,47 +323,26 @@ Current tag pattern:
 - Updated documentation
 - Run with:
   ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.3`
+  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.3
+  ```
 
 ### v0.0.2 (22.06.2025)
 - Enable API calls together with UI
-- run with
-  ```bash 
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.2`
-- run for english only
-    ```bash 
-    docker run -p 8888:8888 -e TTS_LANGUAGES=EN hangrylabs/melotts:v0.0.2`
-- run for english and japanese
-    ```bash 
-    docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP hangrylabs/melotts:v0.0.2`
-- run for english with gpu support named melotts_gpu_en
-    ```bash 
-    docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en hangrylabs/melotts:v0.0.2`
+- Added configurable language selection through `TTS_LANGUAGES`.
+- Added GPU-enabled Docker execution.
 
 ### v0.0.1 (21.06.2025)
 - Initial release
 - Basic TTS functionality
 - Support for English (Default, US, BR, India, AU)
 - Docker support for both CPU and GPU
-- Web interface on port 8888 (http://localhost:8888/)
-- Run with
-  ```bash 
-  docker pull hangrylabs/melotts:v0.0.1`
+- Web interface on port 8888
+
+</details>
 
 ---
 
-## 🛠 Developer Notes
-If you’re interested in building MeloTTS locally, testing changes, or working directly on the codebase, I have included additional technical details and tips in [`notes.md`](./docs/notes.md).
+## License
 
-This file contains guidance for:
-- Local environment setup
-- Dependency management
-- Testing workflows
-- Build & Docker optimization notes
-
----
-
-## 📜 License
-
-This fork is licensed under the [MIT License](LICENSE).  
+This fork is licensed under the [MIT License](LICENSE).
 Original work by Wenliang Zhao, Xumin Yu, and Zengyi Qin in [MeloTTS](https://github.com/myshell-ai/MeloTTS).

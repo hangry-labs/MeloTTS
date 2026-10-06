@@ -26,6 +26,31 @@ class TextModel(BaseModel):
         le=1.5,
         description="Duration sampling noise.",
     )
+    pitch_semitones: float = Field(
+        0.0,
+        ge=-12.0,
+        le=12.0,
+        description=(
+            "Optional post-synthesis pitch shift in semitones. "
+            "Zero skips pitch processing."
+        ),
+    )
+    tempo: float = Field(
+        1.0,
+        ge=0.5,
+        le=2.0,
+        description="Optional post-synthesis tempo multiplier. One skips tempo processing.",
+    )
+    volume: float = Field(
+        1.0,
+        ge=0.0,
+        le=2.0,
+        description="Optional output volume multiplier. One skips volume processing.",
+    )
+    normalize: bool = Field(
+        False,
+        description="Apply FFmpeg loudness normalization after synthesis.",
+    )
     output_format: str = Field(
         "wav",
         alias="format",

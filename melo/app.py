@@ -19,6 +19,8 @@ from melo.audio import (
     OUTPUT_FORMATS,
     STREAM_FORMAT_ALIASES,
     STREAM_FORMATS,
+    apply_audio_effects,
+    audio_effects_enabled,
     encode_audio_bytes,
     encode_pcm_s16le,
     get_supported_output_formats,
@@ -288,6 +290,14 @@ PARAMETER_PRESETS = {
     "Calm": {"speed": 0.85, "sdp_ratio": 0.15, "noise_scale": 0.4, "noise_scale_w": 0.65},
 }
 
+AUDIO_CONTROL_DEFAULTS = {
+    "pitch_semitones": 0.0,
+    "tempo": 1.0,
+    "volume": 1.0,
+    "normalize": False,
+}
+
+
 def get_speakers_for_language(language):
     with MODEL_LOCK:
         model = models.get(language)
@@ -339,6 +349,11 @@ def get_status_payload():
         "configured_languages": LANGUAGES,
         "loaded_languages": get_loaded_languages(),
         "presets": PARAMETER_PRESETS,
+        "controls": {
+            "native": ["speed", "sdp_ratio", "noise_scale", "noise_scale_w"],
+            "post_processing": list(AUDIO_CONTROL_DEFAULTS),
+            "emotion": False,
+        },
         "output_formats": get_supported_output_formats(),
         "stream_formats": STREAM_FORMATS,
     }
@@ -450,6 +465,12 @@ async def defaults():
         "texts": DEFAULT_TEXTS,
         "quotes": QUOTE_BANK,
         "presets": PARAMETER_PRESETS,
+        "audio_controls": AUDIO_CONTROL_DEFAULTS,
+        "capabilities": {
+            "native_controls": ["speed", "sdp_ratio", "noise_scale", "noise_scale_w"],
+            "post_processing_controls": list(AUDIO_CONTROL_DEFAULTS),
+            "named_emotions": False,
+        },
         "output_formats": {"default": "wav", "available": get_supported_output_formats()},
     }
 
@@ -533,9 +554,24 @@ def stream_tts_audio(body: TextModel, route_name: str):
             model = get_model(body)
             bio = synthesize_to_wav_bytes(body, model)
         audio, sample_rate = sf.read(bio, dtype="float32")
+        effects_enabled = audio_effects_enabled(
+            body.pitch_semitones,
+            body.tempo,
+            body.volume,
+            body.normalize,
+        )
+        if effects_enabled:
+            audio = apply_audio_effects(
+                audio,
+                sample_rate,
+                pitch_semitones=body.pitch_semitones,
+                tempo=body.tempo,
+                volume=body.volume,
+                normalize=body.normalize,
+            )
         duration = len(audio) / sample_rate if sample_rate else 0
         output_bio = bio
-        if output_format == "wav":
+        if output_format == "wav" and not effects_enabled:
             output_bio.seek(0)
         else:
             output_bio = encode_audio_bytes(audio, sample_rate, output_format)
@@ -579,6 +615,20 @@ def iter_stream_audio(body: StreamingTextModel, model: TTS, stream_format: str, 
             quiet=True,
             include_silence=True,
         ):
+            if audio_effects_enabled(
+                body.pitch_semitones,
+                body.tempo,
+                body.volume,
+                body.normalize,
+            ):
+                audio = apply_audio_effects(
+                    audio,
+                    sample_rate,
+                    pitch_semitones=body.pitch_semitones,
+                    tempo=body.tempo,
+                    volume=body.volume,
+                    normalize=body.normalize and bool(audio.any()),
+                )
             if stream_format == "pcm_s16le":
                 yield encode_pcm_s16le(audio)
             elif stream_format == "mp3":

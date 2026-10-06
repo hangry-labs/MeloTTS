@@ -1,5 +1,7 @@
 import io
+import subprocess
 
+import numpy as np
 import soundfile as sf
 from fastapi import HTTPException
 
@@ -66,6 +68,110 @@ STREAM_FORMAT_ALIASES = {
     ".mp3": "mp3",
     "mpeg": "mp3",
 }
+
+
+def audio_effects_enabled(
+    pitch_semitones=0.0,
+    tempo=1.0,
+    volume=1.0,
+    normalize=False,
+):
+    return (
+        abs(pitch_semitones) > 0.001
+        or abs(tempo - 1.0) > 0.001
+        or abs(volume - 1.0) > 0.001
+        or normalize
+    )
+
+
+def atempo_filters(multiplier):
+    filters = []
+    current = multiplier
+    while current > 2.0:
+        filters.append("atempo=2.0")
+        current /= 2.0
+    while current < 0.5:
+        filters.append("atempo=0.5")
+        current /= 0.5
+    filters.append(f"atempo={current:.6f}")
+    return filters
+
+
+def build_audio_effect_filters(
+    sample_rate,
+    pitch_semitones=0.0,
+    tempo=1.0,
+    volume=1.0,
+    normalize=False,
+):
+    filters = []
+    if abs(pitch_semitones) > 0.001:
+        pitch_factor = 2 ** (pitch_semitones / 12)
+        shifted_rate = max(1, round(sample_rate * pitch_factor))
+        filters.extend([f"asetrate={shifted_rate}", f"aresample={sample_rate}"])
+        filters.extend(atempo_filters(1 / pitch_factor))
+    if abs(tempo - 1.0) > 0.001:
+        filters.extend(atempo_filters(tempo))
+    if abs(volume - 1.0) > 0.001:
+        filters.append(f"volume={volume:.6f}")
+    if normalize:
+        filters.append("loudnorm=I=-16:TP=-1.5:LRA=11")
+    return filters
+
+
+def _run_ffmpeg(command, input_bytes, action):
+    try:
+        result = subprocess.run(command, input=input_bytes, capture_output=True, check=True)
+    except FileNotFoundError as error:
+        raise RuntimeError(f"ffmpeg is required to {action}") from error
+    except subprocess.CalledProcessError as error:
+        stderr = error.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"ffmpeg failed to {action}: {stderr}") from error
+    return result.stdout
+
+
+def apply_audio_effects(
+    audio,
+    sample_rate,
+    pitch_semitones=0.0,
+    tempo=1.0,
+    volume=1.0,
+    normalize=False,
+):
+    audio = np.asarray(audio, dtype=np.float32)
+    if audio.size == 0 or not audio_effects_enabled(
+        pitch_semitones, tempo, volume, normalize
+    ):
+        return audio
+
+    source = io.BytesIO()
+    sf.write(source, audio, sample_rate, format="WAV", subtype="PCM_16")
+    filters = build_audio_effect_filters(
+        sample_rate, pitch_semitones, tempo, volume, normalize
+    )
+    command = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "wav",
+        "-i",
+        "pipe:0",
+        "-af",
+        ",".join(filters),
+        "-f",
+        "f32le",
+        "-acodec",
+        "pcm_f32le",
+        "-ac",
+        "1",
+        "-ar",
+        str(sample_rate),
+        "pipe:1",
+    ]
+    output = _run_ffmpeg(command, source.getvalue(), "apply audio controls")
+    return np.frombuffer(output, dtype="<f4").astype(np.float32, copy=True)
 
 
 def get_supported_output_formats():
