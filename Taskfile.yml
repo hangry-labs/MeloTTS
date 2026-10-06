@@ -4,12 +4,17 @@ vars:
   IMAGE: melotts:test
   PORT: '8888'
   GPU_DEVICE: '0'
+  APP_DEVICE: auto
   CONTAINER_EN: melotts_en
   CONTAINER_FULL: melotts_full
   CONTAINER_LOCAL: melotts_local
   LANG_EN: EN,EN_V2,EN_NEWEST
   LANG_FULL: EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR
-  TEMP_WAV: '%TEMP%\\melotts_task.wav'
+  API_TEXT: Hello from Melo Text to Speech. This is a local API check.
+  API_LANGUAGE: EN
+  API_SPEAKER: EN-BR
+  API_FORMAT: wav
+  TEMP_AUDIO: '%TEMP%\\melotts_task'
   WAIT_URL: http://localhost:{{.PORT}}/tts/ping
   RELEASE_VERSION: ''
   NEXT_VERSION: ''
@@ -19,6 +24,59 @@ vars:
   RELEASE_BRANCH: main
 
 tasks:
+  doctor:
+    desc: Show local tool, interpreter, Docker, GPU, and repository status
+    cmds:
+      - py -3.13 --version
+      - docker --version
+      - task --version
+      - uv --version
+      - node --version
+      - ruff --version
+      - cmd /c nvidia-smi --query-gpu=index,name,memory.total,memory.used --format=csv,noheader
+      - git status --short
+
+  compile:
+    desc: Compile Python sources, scripts, and tests
+    cmds:
+      - py -3.13 -m compileall -q melo scripts tests
+
+  lint:
+    desc: Lint the actively maintained Python application surface
+    cmds:
+      - ruff check melo/app.py melo/audio.py melo/schemas.py melo/main.py melo/standalone_ui/server.py melo/standalone_ui/gpu.py scripts/check-wheel.py tests
+
+  test:
+    desc: Run unit and repository-contract tests
+    cmds:
+      - py -3.13 -m unittest discover -s tests -v
+
+  package:
+    desc: Build a wheel and verify runtime files are packaged
+    cmds:
+      - cmd: powershell -NoProfile -Command "Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue"
+        ignore_error: true
+      - py -3.13 -m pip wheel . --no-deps --wheel-dir dist
+      - py -3.13 scripts/check-wheel.py dist
+
+  validate:
+    desc: Run lightweight validation used before Docker and release work
+    cmds:
+      - task: compile
+      - task: lint
+      - task: test
+      - node --check melo/standalone_ui/static/app.js
+      - node --check melo/standalone_ui/static/audio-editor.js
+      - node --check melo/standalone_ui/static/audio-utils.js
+      - node --check melo/standalone_ui/static/i18n.js
+      - task: package
+      - docker build --check .
+
+  deps:
+    desc: Regenerate Linux/Python 3.13 pinned requirements.txt from requirements.in
+    cmds:
+      - uv pip compile requirements.in --python-version 3.13 --python-platform x86_64-manylinux_2_36 --index-strategy unsafe-best-match --upgrade --no-header --no-annotate --output-file requirements.txt
+
   gpuinfo:
     desc: Show host GPU indexes (use with GPU_DEVICE variable)
     cmds:
@@ -41,7 +99,9 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_FULL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} {{.IMAGE}}
+      - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
+        ignore_error: true
+      - cmd /c docker run -d --name {{.CONTAINER_FULL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_DEVICE={{.APP_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_FULL}}"
 
   imageweb:
@@ -71,7 +131,9 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_EN}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} {{.IMAGE}}
+      - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
+        ignore_error: true
+      - cmd /c docker run -d --name {{.CONTAINER_EN}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_DEVICE={{.APP_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_EN}}"
 
   localrun:
@@ -83,7 +145,7 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -e MELOTTS_UI_DEV=1 -v "{{.TASKFILE_DIR}}\melo:/app/melo:ro" -v "{{.TASKFILE_DIR}}\assets:/app/assets:ro" -v "{{.TASKFILE_DIR}}\VERSION:/app/VERSION:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_DEVICE={{.APP_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -e MELOTTS_UI_DEV=1 -v "{{.TASKFILE_DIR}}\melo:/app/melo:ro" -v "{{.TASKFILE_DIR}}\assets:/app/assets:ro" -v "{{.TASKFILE_DIR}}\VERSION:/app/VERSION:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   localrunsmall:
@@ -95,7 +157,7 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -e MELOTTS_UI_DEV=1 -v "{{.TASKFILE_DIR}}\melo:/app/melo:ro" -v "{{.TASKFILE_DIR}}\assets:/app/assets:ro" -v "{{.TASKFILE_DIR}}\VERSION:/app/VERSION:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_DEVICE={{.APP_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -e MELOTTS_UI_DEV=1 -v "{{.TASKFILE_DIR}}\melo:/app/melo:ro" -v "{{.TASKFILE_DIR}}\assets:/app/assets:ro" -v "{{.TASKFILE_DIR}}\VERSION:/app/VERSION:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   localdev:
@@ -122,13 +184,26 @@ tasks:
       - task: localrun
 
   imageapi:
-    desc: Call TTS API, play generated temp WAV, then remove it
+    desc: Call TTS API, verify generated audio, and play WAV output
     cmds:
       - task: imagewait
-      - 'cmd /c curl.exe -sS -X POST http://localhost:{{.PORT}}/tts/generate -H "Content-Type: application/json" -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":0.21,\"noise_scale\":0.61,\"noise_scale_w\":0.81}" --output {{.TEMP_WAV}}'
-      - 'cmd /c if not exist {{.TEMP_WAV}} exit /b 1'
-      - 'cmd /c python -c "import winsound; winsound.PlaySound(r''{{.TEMP_WAV}}'', winsound.SND_FILENAME)"'
-      - 'cmd /c del /f /q {{.TEMP_WAV}}'
+      - 'cmd /c curl.exe --fail-with-body -sS -X POST http://localhost:{{.PORT}}/tts/generate -H "Content-Type: application/json" -d "{\"text\":\"{{.API_TEXT}}\",\"speed\":1.0,\"language\":\"{{.API_LANGUAGE}}\",\"speaker_id\":\"{{.API_SPEAKER}}\",\"format\":\"{{.API_FORMAT}}\"}" --output {{.TEMP_AUDIO}}.{{.API_FORMAT}}'
+      - 'cmd /c py -3.13 -c "from pathlib import Path; p=Path(r''{{.TEMP_AUDIO}}.{{.API_FORMAT}}''); assert p.exists() and p.stat().st_size > 0, p"'
+      - 'cmd /c py -3.13 -c "import winsound; winsound.PlaySound(r''{{.TEMP_AUDIO}}.{{.API_FORMAT}}'', winsound.SND_FILENAME)"'
+      - 'cmd /c del /f /q {{.TEMP_AUDIO}}.{{.API_FORMAT}}'
+
+  imageapi-format:
+    desc: Call TTS API for API_FORMAT and verify the output without playback
+    cmds:
+      - task: imagewait
+      - 'cmd /c curl.exe --fail-with-body -sS -X POST http://localhost:{{.PORT}}/tts/generate -H "Content-Type: application/json" -d "{\"text\":\"{{.API_TEXT}}\",\"speed\":1.0,\"language\":\"{{.API_LANGUAGE}}\",\"speaker_id\":\"{{.API_SPEAKER}}\",\"format\":\"{{.API_FORMAT}}\"}" --output {{.TEMP_AUDIO}}.{{.API_FORMAT}}'
+      - 'cmd /c py -3.13 -c "from pathlib import Path; p=Path(r''{{.TEMP_AUDIO}}.{{.API_FORMAT}}''); assert p.exists() and p.stat().st_size > 0, p"'
+      - 'cmd /c del /f /q {{.TEMP_AUDIO}}.{{.API_FORMAT}}'
+
+  logs:
+    desc: Show logs from the active MeloTTS container
+    cmds:
+      - cmd /c docker logs --tail 200 {{.CONTAINER_LOCAL}} 2>nul || docker logs --tail 200 {{.CONTAINER_FULL}} 2>nul || docker logs --tail 200 {{.CONTAINER_EN}}
 
   release:
     desc: Validate and release the current VERSION snapshot, then start the next snapshot

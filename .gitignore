@@ -10,6 +10,8 @@ multilingual_ckpts/
 
 # Build artifacts
 build/
+dist/
+.build/
 *.egg-info/
 *.zip
 *.wav

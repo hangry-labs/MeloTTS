@@ -33,6 +33,29 @@ function Get-NextPatchSnapshot {
     return "v$major.$minor.$patch-SNAPSHOT"
 }
 
+function Convert-ToPackageVersion {
+    param([string]$DisplayVersion)
+    return $DisplayVersion.TrimStart('v').Replace('-SNAPSHOT', '.dev0')
+}
+
+function Update-PackageVersion {
+    param(
+        [string]$Text,
+        [string]$DisplayVersion
+    )
+    $packageVersion = Convert-ToPackageVersion $DisplayVersion
+    $updated = [regex]::Replace(
+        $Text,
+        '(?m)^version = "[^"]+"$',
+        "version = `"$packageVersion`"",
+        1
+    )
+    if ($updated -eq $Text) {
+        throw "Unable to update project.version in pyproject.toml."
+    }
+    return $updated
+}
+
 function Update-DockerImageTags {
     param(
         [string]$Text,
@@ -61,6 +84,9 @@ Push-Location $repoRoot
 try {
     if (-not (Test-Path -LiteralPath "VERSION")) {
         throw "VERSION file is missing from the repository root."
+    }
+    if (-not (Test-Path -LiteralPath "pyproject.toml")) {
+        throw "pyproject.toml is missing from the repository root."
     }
 
     $snapshotVersion = (Get-Content -Raw -LiteralPath "VERSION").Trim()
@@ -102,6 +128,8 @@ try {
 
     Invoke-Step "Update release files for $releaseVersion" {
         Set-Text "VERSION" "$releaseVersion`n"
+        $project = Get-Content -Raw -LiteralPath "pyproject.toml"
+        Set-Text "pyproject.toml" (Update-PackageVersion $project $releaseVersion)
 
         $readme = Get-Content -Raw -LiteralPath "README.md"
         $readme = $readme.Replace("### $releaseVersion (in development)", "### $releaseVersion")
@@ -119,21 +147,15 @@ try {
 
     Invoke-Step "Run release validation" {
         if (-not (Test-Enabled $SkipValidation)) {
-            py -3.13 -m compileall -q melo tests
-            if ($LASTEXITCODE -ne 0) { throw "Python compilation failed." }
-            py -3.13 -m unittest discover -s tests -v
-            if ($LASTEXITCODE -ne 0) { throw "Python tests failed." }
-            Get-ChildItem melo/standalone_ui/static -Filter '*.js' | ForEach-Object {
-                node --check $_.FullName
-                if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax check failed for $($_.FullName)." }
-            }
+            task validate
+            if ($LASTEXITCODE -ne 0) { throw "Project validation failed." }
             task image
             if ($LASTEXITCODE -ne 0) { throw "Full Docker image build failed." }
         }
     }
 
     Invoke-Step "Commit and tag $releaseVersion" {
-        git add VERSION README.md docs/dockerhub.md
+        git add VERSION pyproject.toml README.md docs/dockerhub.md
         git commit -m "release: $releaseVersion"
         if ($LASTEXITCODE -ne 0) { throw "Release commit failed." }
         git tag -a $releaseVersion -m "Release $releaseVersion"
@@ -142,7 +164,9 @@ try {
 
     Invoke-Step "Prepare $nextSnapshotVersion" {
         Set-Text "VERSION" "$nextSnapshotVersion`n"
-        git add VERSION
+        $project = Get-Content -Raw -LiteralPath "pyproject.toml"
+        Set-Text "pyproject.toml" (Update-PackageVersion $project $nextSnapshotVersion)
+        git add VERSION pyproject.toml
         git commit -m "chore: start $nextSnapshotVersion"
         if ($LASTEXITCODE -ne 0) { throw "Next-snapshot commit failed." }
     }

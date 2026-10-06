@@ -15,7 +15,6 @@ from fastapi.staticfiles import StaticFiles
 
 from melo.standalone_ui.gpu import GPU_MONITOR
 
-
 PACKAGE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = PACKAGE_DIR / "static"
 LOCALES_DIR = STATIC_DIR / "locales"

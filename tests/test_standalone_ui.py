@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import json
 import re
-import unittest
 import time
+import unittest
 from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from melo.standalone_ui.server import LOCALES_DIR, create_app
 from melo.standalone_ui.gpu import GpuMonitor, read_gpu_stats
+from melo.standalone_ui.server import LOCALES_DIR, create_app
 
 
 class StandaloneUiTests(unittest.TestCase):

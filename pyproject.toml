@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "melotts"
+version = "1.0.0.dev0"
+description = "Easy-to-run, offline text-to-speech powered by MeloTTS"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { file = "LICENSE" }
+authors = [
+  { name = "MyShell.ai" },
+  { name = "Hangry Labs" },
+]
+dependencies = [
+  "click",
+  "cn2an",
+  "fastapi",
+  "fugashi",
+  "g2p-en",
+  "g2pkk",
+  "gruut",
+  "gruut-ipa",
+  "gruut-lang-de",
+  "gruut-lang-en",
+  "gruut-lang-es",
+  "gruut-lang-fr",
+  "huggingface-hub==0.36.2",
+  "inflect",
+  "jamo",
+  "jieba",
+  "mecab-python3",
+  "nltk",
+  "num2words",
+  "numba",
+  "numpy",
+  "pydantic",
+  "pykakasi",
+  "pypinyin",
+  "soundfile",
+  "torch==2.11.0",
+  "torchaudio==2.11.0",
+  "tqdm",
+  "transformers==4.57.6",
+  "txtsplit",
+  "unidic",
+  "unidic-lite",
+  "uvicorn[standard]",
+]
+
+[project.scripts]
+melotts = "melo.main:main"
+melo = "melo.main:main"
+melo-ui = "melo.app:main"
+
+[project.urls]
+Homepage = "https://github.com/hangry-labs/MeloTTS"
+Documentation = "https://github.com/hangry-labs/MeloTTS#readme"
+Issues = "https://github.com/hangry-labs/MeloTTS/issues"
+Docker = "https://hub.docker.com/r/hangrylabs/melotts"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/assets",
+  "/melo",
+  "/LICENSE",
+  "/README.md",
+  "/VERSION",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["melo"]
+
+[tool.hatch.build.targets.wheel.force-include]
+assets = "assets"
+VERSION = "VERSION"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "RUF"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"melo/app.py" = ["RUF001", "S104"]
+"melo/standalone_ui/gpu.py" = ["S603", "S607"]
+"melo/text/__init__.py" = ["F403", "F405"]
+"tests/*" = ["S101"]

@@ -1,37 +1,81 @@
-import click
 import warnings
-import os
+from pathlib import Path
+
+import click
+
+LANGUAGES = ["EN", "EN_V2", "EN_NEWEST", "ES", "FR", "ZH", "JP", "KR"]
 
 
-@click.command
-@click.argument('text')
-@click.argument('output_path')
-@click.option("--file", '-f', is_flag=True, show_default=True, default=False, help="Text is a file")
-@click.option('--language', '-l', default='EN', help='Language, defaults to English', type=click.Choice(['EN', 'EN_V2', 'EN_NEWEST', 'ES', 'FR', 'ZH', 'JP', 'KR'], case_sensitive=False))
-@click.option('--speaker', '-spk', default='EN-Default', help='Speaker ID, only for English, leave empty for default, ignored if not English. If English, defaults to "EN-Default"', type=click.Choice(['EN-Default', 'EN-US', 'EN-BR', 'EN_INDIA', 'EN-AU']))
-@click.option('--speed', '-s', default=1.0, help='Speed, defaults to 1.0', type=float)
-@click.option('--device', '-d', default='auto', help='Device, defaults to auto')
+def _speaker_key(value):
+    return value.strip().upper().replace("_", "-")
+
+
+def resolve_speaker_id(speaker_ids, requested_speaker=None):
+    if not speaker_ids:
+        raise click.ClickException("The selected model does not expose any speakers.")
+    if not requested_speaker:
+        return next(iter(speaker_ids.values()))
+
+    requested_key = _speaker_key(requested_speaker)
+    for speaker_name, speaker_id in speaker_ids.items():
+        if _speaker_key(speaker_name) == requested_key:
+            return speaker_id
+
+    available = ", ".join(speaker_ids)
+    raise click.BadParameter(
+        f"unknown speaker '{requested_speaker}'. Available speakers: {available}",
+        param_hint="--speaker",
+    )
+
+
+@click.command()
+@click.argument("text")
+@click.argument("output_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--file", "-f", is_flag=True, help="Read text from a UTF-8 file.")
+@click.option(
+    "--language",
+    "-l",
+    default="EN",
+    show_default=True,
+    type=click.Choice(LANGUAGES, case_sensitive=False),
+    help="Model language.",
+)
+@click.option(
+    "--speaker",
+    "-spk",
+    default=None,
+    help="English speaker name. Defaults to the first speaker exposed by the selected model.",
+)
+@click.option("--speed", "-s", default=1.0, show_default=True, type=float)
+@click.option("--device", "-d", default="auto", show_default=True)
 def main(text, file, output_path, language, speaker, speed, device):
+    """Synthesize TEXT to OUTPUT_PATH."""
     if file:
-        if not os.path.exists(text):
-            raise FileNotFoundError(f'Trying to load text from file due to --file/-f flag, but file not found. Remove the --file/-f flag to pass a string.')
-        else:
-            with open(text) as f:
-                text = f.read().strip()
-    if text == '':
-        raise ValueError('You entered empty text or the file you passed was empty.')
+        source_path = Path(text)
+        if not source_path.is_file():
+            raise click.ClickException(
+                f"Text file '{source_path}' was not found. Remove --file to pass literal text."
+            )
+        text = source_path.read_text(encoding="utf-8").strip()
+
+    if not text.strip():
+        raise click.ClickException("Text must not be empty.")
+
     language = language.upper()
-    if language == '': language = 'EN'
-    if speaker == '': speaker = None
-    is_english_variant = language in ['EN', 'EN_V2', 'EN_NEWEST']
-    if (not is_english_variant) and speaker:
-        warnings.warn('You specified a speaker but selected a non-English language; speaker choice will be ignored.')
+    is_english_variant = language in {"EN", "EN_V2", "EN_NEWEST"}
+    if not is_english_variant and speaker:
+        warnings.warn(
+            "A speaker was specified for a non-English model and will be ignored.",
+            stacklevel=2,
+        )
+        speaker = None
+
     from melo.api import TTS
+
     model = TTS(language=language, device=device)
-    speaker_ids = model.hps.data.spk2id
-    if is_english_variant:
-        if not speaker: speaker = 'EN-Default'
-        spkr = speaker_ids[speaker]
-    else:
-        spkr = speaker_ids[list(speaker_ids.keys())[0]]
-    model.tts_to_file(text, spkr, output_path, speed=speed)
+    speaker_id = resolve_speaker_id(model.hps.data.spk2id, speaker)
+    model.tts_to_file(text, speaker_id, output_path, speed=speed)
+
+
+if __name__ == "__main__":
+    main()

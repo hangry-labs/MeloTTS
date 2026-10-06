@@ -5,7 +5,6 @@ import threading
 import time
 from collections.abc import Callable
 
-
 GpuValue = float | int | str | None
 GPU_HISTORY_FIELDS = (
     "utilization",

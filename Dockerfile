@@ -10,9 +10,8 @@ RUN apt-get update && apt-get install -y \
     build-essential libsndfile1 curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements and setup script to cache installs
+# Copy the deployment lock first so dependency installation remains cacheable.
 COPY requirements.txt .
-# COPY setup.py . #has find packages so breaks cache
 
 # Install Python dependencies (PostInstall will auto-download unidic!)
 RUN pip install --upgrade pip setuptools wheel

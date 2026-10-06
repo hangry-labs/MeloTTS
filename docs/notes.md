@@ -159,7 +159,14 @@ winget install --id=astral-sh.uv -e
 Refresh Python dependencies:
 
 ```bash
-uv pip compile requirements.in --upgrade --python-version 3.13 --no-header --no-annotate --output-file requirements.txt
+task deps
+```
+
+That task deliberately resolves for the Linux/Python 3.13 Docker runtime, even when it is
+run from Windows. The full command is:
+
+```bash
+uv pip compile requirements.in --python-version 3.13 --python-platform x86_64-manylinux_2_36 --index-strategy unsafe-best-match --upgrade --no-header --no-annotate --output-file requirements.txt
 ```
 
 After this command, inspect `requirements.txt`. It may change many indirect packages even if `requirements.in` is small.
@@ -189,6 +196,16 @@ Check dependency consistency inside the running container:
 ```bash
 docker exec melotts_local python -m pip check
 ```
+
+Run all lightweight checks, including a real wheel build and wheel-content check:
+
+```bash
+task validate
+```
+
+Python package metadata lives in `pyproject.toml`. Root `VERSION` remains the easy-to-edit
+display and release version; the release task updates the standards-compliant package
+version in `pyproject.toml` automatically (`v1.0.0-SNAPSHOT` becomes `1.0.0.dev0`).
 
 Print key runtime versions:
 

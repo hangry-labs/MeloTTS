@@ -8,8 +8,10 @@
 
 # Documentation and tests are not needed in runtime image
 /docs
-/test
+/tests
 /todo
+/.ai
+/AGENTS.md
 
 # Python caches and notebook artifacts
 **/__pycache__

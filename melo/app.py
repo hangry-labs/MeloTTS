@@ -8,16 +8,26 @@ from pathlib import Path
 
 import soundfile as sf
 import torch
-from fastapi import Body, Depends, FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field
 from starlette.concurrency import run_in_threadpool
 
 from melo.api import TTS
+from melo.audio import (
+    FORMAT_ALIASES,
+    OUTPUT_FORMATS,
+    STREAM_FORMAT_ALIASES,
+    STREAM_FORMATS,
+    encode_audio_bytes,
+    encode_pcm_s16le,
+    get_supported_output_formats,
+    normalize_output_format,
+    normalize_stream_format,
+)
+from melo.schemas import LanguageAction, MetricsModel, StreamingTextModel, TextModel
 from melo.split_utils import split_sentence
 from melo.standalone_ui.server import create_app as create_ui_app
-
 
 APP_ROOT = Path(__file__).resolve().parent.parent
 
@@ -140,16 +150,24 @@ LANGUAGES = [
     for lang in os.getenv("TTS_LANGUAGES", "EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR").split(",")
     if lang.strip()
 ]
-validate_nltk_resources(LANGUAGES)
 logger.info(f"Loading models for languages: {LANGUAGES}")
 models = {}
 MODEL_LOCK = threading.RLock()
-for lang in LANGUAGES:
-    try:
-        models[lang] = TTS(language=lang, device=DEVICE)
-        logger.info(f"Loaded TTS model for {lang}")
-    except Exception as error:
-        logger.error(f"Failed to load model for {lang}: {error}")
+INFERENCE_LOCK = threading.RLock()
+
+
+def load_initial_models():
+    validate_nltk_resources(LANGUAGES)
+    for lang in LANGUAGES:
+        try:
+            models[lang] = TTS(language=lang, device=DEVICE)
+            logger.info(f"Loaded TTS model for {lang}")
+        except Exception:
+            logger.exception("Failed to load model for %s", lang)
+
+
+if os.getenv("MELOTTS_EAGER_LOAD", "1").strip().lower() not in {"0", "false", "no"}:
+    load_initial_models()
 
 
 DEFAULT_TEXTS = {
@@ -270,109 +288,17 @@ PARAMETER_PRESETS = {
     "Calm": {"speed": 0.85, "sdp_ratio": 0.15, "noise_scale": 0.4, "noise_scale_w": 0.65},
 }
 
-OUTPUT_FORMATS = {
-    "wav": {
-        "sf_format": "WAV",
-        "subtype": None,
-        "media_type": "audio/wav",
-        "extension": "wav",
-        "label": "WAV",
-    },
-    "mp3": {
-        "sf_format": "MP3",
-        "subtype": "MPEG_LAYER_III",
-        "media_type": "audio/mpeg",
-        "extension": "mp3",
-        "label": "MP3",
-    },
-    "flac": {
-        "sf_format": "FLAC",
-        "subtype": "PCM_16",
-        "media_type": "audio/flac",
-        "extension": "flac",
-        "label": "FLAC",
-    },
-    "ogg": {
-        "sf_format": "OGG",
-        "subtype": "VORBIS",
-        "media_type": "audio/ogg",
-        "extension": "ogg",
-        "label": "Ogg Vorbis",
-    },
-}
-
-FORMAT_ALIASES = {
-    ".wav": "wav",
-    "wave": "wav",
-    ".mp3": "mp3",
-    "mpeg": "mp3",
-    ".flac": "flac",
-    ".ogg": "ogg",
-    "oga": "ogg",
-    "vorbis": "ogg",
-}
-
-
-STREAM_FORMATS = {
-    "pcm_s16le": {
-        "media_type": "audio/pcm;rate={sample_rate};channels=1;encoding=signed-integer;bits=16",
-        "extension": "pcm",
-        "label": "Raw PCM 16-bit little-endian",
-    },
-    "mp3": {
-        "media_type": "audio/mpeg",
-        "extension": "mp3",
-        "label": "MP3 sentence chunks",
-    },
-}
-
-STREAM_FORMAT_ALIASES = {
-    "pcm": "pcm_s16le",
-    "s16le": "pcm_s16le",
-    "raw": "pcm_s16le",
-    ".pcm": "pcm_s16le",
-    ".mp3": "mp3",
-    "mpeg": "mp3",
-}
-
-
-class TextModel(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    text: str = Field(..., description="Text to synthesize.")
-    speed: float = Field(1.0, ge=0.5, le=2.0, description="Speech speed multiplier.")
-    language: str = Field("EN", description="Loaded language/model code.")
-    speaker_id: str = Field(..., description="Speaker ID from /tts/speakers.")
-    sdp_ratio: float = Field(0.2, ge=0.0, le=1.0, description="Stochastic duration predictor ratio.")
-    noise_scale: float = Field(0.6, ge=0.0, le=1.5, description="Acoustic sampling noise.")
-    noise_scale_w: float = Field(0.8, ge=0.0, le=1.5, description="Duration sampling noise.")
-    output_format: str = Field(
-        "wav",
-        alias="format",
-        description="Response audio format. Defaults to wav for backward compatibility. Supported: wav, mp3, flac, ogg.",
-    )
-
-
-class StreamingTextModel(TextModel):
-    stream_format: str = Field(
-        "pcm_s16le",
-        description=(
-            "Streaming response format. Defaults to raw PCM for true chunked streaming. "
-            "Supported: pcm_s16le, mp3."
-        ),
-    )
-
-
-class MetricsModel(BaseModel):
-    text: str = Field("", description="Text to inspect.")
-    language: str = Field("EN", description="Language/model code used for sentence splitting.")
-
-
 def get_speakers_for_language(language):
-    model = models.get(language)
+    with MODEL_LOCK:
+        model = models.get(language)
     if not model:
         return []
     return list(model.hps.data.spk2id.keys())
+
+
+def get_loaded_languages():
+    with MODEL_LOCK:
+        return list(models)
 
 
 def get_text_metrics(text, language):
@@ -388,31 +314,15 @@ def get_text_metrics(text, language):
 
 
 def get_voice_inventory():
-    return [
-        {
-            "language": language,
-            "status": "loaded" if language in models else "unavailable",
-            "speakers": get_speakers_for_language(language),
-        }
-        for language in LANGUAGES
-    ]
-
-
-def get_supported_output_formats():
-    available_formats = sf.available_formats()
-    supported = {}
-    for name, config in OUTPUT_FORMATS.items():
-        if config["sf_format"] not in available_formats:
-            continue
-        subtype = config["subtype"]
-        if subtype and subtype not in sf.available_subtypes(config["sf_format"]):
-            continue
-        supported[name] = {
-            "label": config["label"],
-            "extension": config["extension"],
-            "media_type": config["media_type"],
-        }
-    return supported
+    with MODEL_LOCK:
+        return [
+            {
+                "language": language,
+                "status": "loaded" if language in models else "unavailable",
+                "speakers": get_speakers_for_language(language),
+            }
+            for language in LANGUAGES
+        ]
 
 
 UI_DEFAULT_OUTPUT_FORMAT = "mp3" if "mp3" in get_supported_output_formats() else "wav"
@@ -427,7 +337,7 @@ def get_status_payload():
         "device": DEVICE,
         "runtime": RUNTIME_LABEL,
         "configured_languages": LANGUAGES,
-        "loaded_languages": list(models.keys()),
+        "loaded_languages": get_loaded_languages(),
         "presets": PARAMETER_PRESETS,
         "output_formats": get_supported_output_formats(),
         "stream_formats": STREAM_FORMATS,
@@ -437,35 +347,34 @@ def get_status_payload():
 def load_model_sync(language):
     if language not in LANGUAGES:
         raise HTTPException(status_code=404, detail=f"Language '{language}' is not configured")
-    with MODEL_LOCK:
+    with INFERENCE_LOCK, MODEL_LOCK:
         if language not in models:
-            logger.info(f"Loading TTS model for {language} on demand")
+            logger.info("Loading TTS model for %s on demand", language)
             models[language] = TTS(language=language, device=DEVICE)
-        return {
-            "loaded": language,
-            "loaded_languages": list(models.keys()),
-        }
+        return {"loaded": language, "loaded_languages": list(models.keys())}
 
 
 def purge_models_sync(language):
-    with MODEL_LOCK:
-        keep_model = models.get(language)
-        if not keep_model:
-            raise HTTPException(status_code=404, detail=f"Language '{language}' is not loaded")
-        removed = [lang for lang in models if lang != language]
-        models.clear()
-        models[language] = keep_model
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    logger.info(f"Released models from memory: {removed}. Kept: {language}")
-    return {"kept": language, "removed": removed, "loaded_languages": list(models.keys())}
+    with INFERENCE_LOCK:
+        with MODEL_LOCK:
+            keep_model = models.get(language)
+            if not keep_model:
+                raise HTTPException(status_code=404, detail=f"Language '{language}' is not loaded")
+            removed = [lang for lang in models if lang != language]
+            models.clear()
+            models[language] = keep_model
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        logger.info("Released models from memory: %s. Kept: %s", removed, language)
+        return {"kept": language, "removed": removed, "loaded_languages": [language]}
 
 
 def get_model(body: TextModel) -> TTS:
-    model = models.get(body.language)
+    with MODEL_LOCK:
+        model = models.get(body.language)
     if not model:
-        logger.error(f"Requested model not available: {body.language}")
+        logger.error("Requested model not available: %s", body.language)
         raise HTTPException(status_code=404, detail=f"Language '{body.language}' is not loaded")
     return model
 
@@ -485,6 +394,7 @@ def synthesize_to_wav_bytes(body, model):
         noise_scale=body.noise_scale,
         noise_scale_w=body.noise_scale_w,
         format="wav",
+        quiet=True,
     )
     bio.seek(0)
     return bio
@@ -493,61 +403,11 @@ def synthesize_to_wav_bytes(body, model):
 def resolve_speaker_id(body, model):
     try:
         return model.hps.data.spk2id[body.speaker_id]
-    except (AttributeError, KeyError):
-        raise HTTPException(status_code=400, detail=f"Invalid speaker_id '{body.speaker_id}'")
-
-
-def normalize_output_format(output_format):
-    normalized = (output_format or "wav").strip().lower()
-    normalized = FORMAT_ALIASES.get(normalized, normalized)
-    if normalized not in OUTPUT_FORMATS:
-        supported = ", ".join(get_supported_output_formats().keys())
+    except (AttributeError, KeyError) as error:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported output format '{output_format}'. Supported formats: {supported}",
-        )
-    if normalized not in get_supported_output_formats():
-        raise HTTPException(
-            status_code=500,
-            detail=f"Output format '{normalized}' is configured but not available in this runtime",
-        )
-    return normalized
-
-
-def normalize_stream_format(stream_format):
-    normalized = (stream_format or "pcm_s16le").strip().lower()
-    normalized = STREAM_FORMAT_ALIASES.get(normalized, normalized)
-    if normalized not in STREAM_FORMATS:
-        supported = ", ".join(STREAM_FORMATS.keys())
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported stream_format '{stream_format}'. Supported formats: {supported}",
-        )
-    if normalized == "mp3" and "mp3" not in get_supported_output_formats():
-        raise HTTPException(
-            status_code=500,
-            detail="MP3 streaming is configured but MP3 encoding is not available in this runtime",
-        )
-    return normalized
-
-
-def encode_audio_bytes(audio, sample_rate, output_format):
-    config = OUTPUT_FORMATS[output_format]
-    encoded = io.BytesIO()
-    sf.write(
-        encoded,
-        audio,
-        sample_rate,
-        format=config["sf_format"],
-        subtype=config["subtype"],
-    )
-    encoded.seek(0)
-    return encoded
-
-
-def encode_pcm_s16le(audio):
-    clamped = audio.clip(-1.0, 1.0)
-    return (clamped * 32767.0).astype("<i2").tobytes()
+            detail=f"Invalid speaker_id '{body.speaker_id}'",
+        ) from error
 
 
 api = FastAPI(
@@ -562,8 +422,13 @@ api = FastAPI(
 
 @api.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    logger.error(f"Validation error for path {request.url.path}: {exc}")
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    errors = exc.errors()
+    error_summary = [
+        {"type": error.get("type"), "location": error.get("loc")}
+        for error in errors
+    ]
+    logger.warning("Validation error for path %s: %s", request.url.path, error_summary)
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 @api.get("/tts/ping")
@@ -614,17 +479,17 @@ async def stream_formats():
 @api.get("/tts/languages")
 async def list_languages():
     logger.info("/tts/languages request received")
-    return {"languages": LANGUAGES, "loaded_languages": list(models.keys())}
+    return {"languages": LANGUAGES, "loaded_languages": get_loaded_languages()}
 
 
 @api.get("/tts/speakers")
 async def list_speakers(language: str = Query(..., description="Loaded language code")):
     logger.info(f"/tts/speakers request received for language={language}")
-    model = models.get(language)
-    if not model:
+    speakers = get_speakers_for_language(language)
+    if not speakers:
         logger.warning(f"Requested speakers for unknown language: {language}")
         raise HTTPException(status_code=404, detail="Language not found")
-    return {"language": language, "speakers": list(model.hps.data.spk2id.keys())}
+    return {"language": language, "speakers": speakers}
 
 
 @api.get("/tts/voices")
@@ -634,26 +499,39 @@ async def voices():
 
 
 @api.post("/tts/metrics")
-async def metrics(body: MetricsModel = Body(...)):
+async def metrics(body: MetricsModel):
     logger.info(f"/tts/metrics request received for language={body.language}")
     return {"language": body.language, "metrics": get_text_metrics(body.text, body.language)}
 
 
 @api.post("/tts/purge")
-async def purge_models(language: str = Body(..., embed=True)):
-    return await run_in_threadpool(purge_models_sync, language)
+async def purge_models(body: LanguageAction):
+    return await run_in_threadpool(purge_models_sync, body.language)
 
 
 @api.post("/tts/load")
-async def load_model(language: str = Body(..., embed=True)):
-    return await run_in_threadpool(load_model_sync, language)
+async def load_model(body: LanguageAction):
+    return await run_in_threadpool(load_model_sync, body.language)
 
 
-async def stream_tts_audio(body: TextModel, model: TTS, route_name: str):
-    logger.info(f"{route_name} request: {body}")
+def log_synthesis_request(route_name, body, response_format):
+    logger.info(
+        "%s request: language=%s, speaker=%s, characters=%d, format=%s",
+        route_name,
+        body.language,
+        body.speaker_id,
+        len(body.text),
+        response_format,
+    )
+
+
+def stream_tts_audio(body: TextModel, route_name: str):
     try:
         output_format = normalize_output_format(body.output_format)
-        bio = synthesize_to_wav_bytes(body, model)
+        log_synthesis_request(route_name, body, output_format)
+        with INFERENCE_LOCK:
+            model = get_model(body)
+            bio = synthesize_to_wav_bytes(body, model)
         audio, sample_rate = sf.read(bio, dtype="float32")
         duration = len(audio) / sample_rate if sample_rate else 0
         output_bio = bio
@@ -684,34 +562,36 @@ async def stream_tts_audio(body: TextModel, model: TTS, route_name: str):
         )
     except HTTPException:
         raise
-    except Exception as error:
-        logger.error(f"Error during TTS generation: {error}")
-        return JSONResponse(status_code=500, content={"error": str(error)})
+    except Exception:
+        logger.exception("Error during TTS generation")
+        return JSONResponse(status_code=500, content={"error": "TTS generation failed"})
 
 
 def iter_stream_audio(body: StreamingTextModel, model: TTS, stream_format: str, sample_rate: int, spk_id: int):
-    for audio in model.iter_audio_segments(
-        body.text,
-        spk_id,
-        speed=body.speed,
-        sdp_ratio=body.sdp_ratio,
-        noise_scale=body.noise_scale,
-        noise_scale_w=body.noise_scale_w,
-        quiet=True,
-        include_silence=True,
-    ):
-        if stream_format == "pcm_s16le":
-            yield encode_pcm_s16le(audio)
-        elif stream_format == "mp3":
-            yield encode_audio_bytes(audio, sample_rate, "mp3").getvalue()
+    with INFERENCE_LOCK:
+        for audio in model.iter_audio_segments(
+            body.text,
+            spk_id,
+            speed=body.speed,
+            sdp_ratio=body.sdp_ratio,
+            noise_scale=body.noise_scale,
+            noise_scale_w=body.noise_scale_w,
+            quiet=True,
+            include_silence=True,
+        ):
+            if stream_format == "pcm_s16le":
+                yield encode_pcm_s16le(audio)
+            elif stream_format == "mp3":
+                yield encode_audio_bytes(audio, sample_rate, "mp3").getvalue()
 
 
-async def stream_tts_audio_segments(body: StreamingTextModel, model: TTS, route_name: str):
-    logger.info(f"{route_name} request: {body}")
+def stream_tts_audio_segments(body: StreamingTextModel, route_name: str):
     try:
         if not body.text.strip():
             raise HTTPException(status_code=400, detail="Text must not be empty")
         stream_format = normalize_stream_format(body.stream_format)
+        log_synthesis_request(route_name, body, stream_format)
+        model = get_model(body)
         spk_id = resolve_speaker_id(body, model)
         sample_rate = model.hps.data.sampling_rate
         format_config = STREAM_FORMATS[stream_format]
@@ -733,24 +613,24 @@ async def stream_tts_audio_segments(body: StreamingTextModel, model: TTS, route_
         )
     except HTTPException:
         raise
-    except Exception as error:
-        logger.error(f"Error during streaming TTS generation: {error}")
-        return JSONResponse(status_code=500, content={"error": str(error)})
+    except Exception:
+        logger.exception("Error during streaming TTS generation")
+        return JSONResponse(status_code=500, content={"error": "Streaming TTS generation failed"})
 
 
 @api.post("/tts/generate")
-async def generate_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
-    return await stream_tts_audio(body, model, "/tts/generate")
+def generate_tts(body: TextModel):
+    return stream_tts_audio(body, "/tts/generate")
 
 
 @api.post("/tts/stream")
-async def stream_tts(body: StreamingTextModel = Body(...), model: TTS = Depends(get_model)):
-    return await stream_tts_audio_segments(body, model, "/tts/stream")
+def stream_tts(body: StreamingTextModel):
+    return stream_tts_audio_segments(body, "/tts/stream")
 
 
 @api.post("/tts/convert/tts", deprecated=True)
-async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
-    return await stream_tts_audio(body, model, "/tts/convert/tts")
+def convert_tts(body: TextModel):
+    return stream_tts_audio(body, "/tts/convert/tts")
 
 
 app = create_ui_app(api_app=api)
@@ -768,5 +648,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as error:
-        logger.exception(f"Application crashed: {error}")
+    except Exception:
+        logger.exception("Application crashed")

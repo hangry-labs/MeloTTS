@@ -166,6 +166,11 @@ Current tag pattern:
 - Consolidated Docker publication into one strict, metadata-rich pipeline for matching Docker Hub and GHCR full/English-family images.
 - Replaced legacy artwork with optimized WebP sets for Melo T T S product surfaces and Hangry Labs organization surfaces.
 - Added structural tests for the standalone browser workspace.
+- Replaced legacy `setup.py` packaging with `pyproject.toml`; wheels now include the runtime `VERSION`, WebP artwork, standalone UI, and CLI entry points.
+- Prevented synthesis text from being written to application logs and serialized inference with model load/purge operations for predictable GPU use.
+- Fixed CLI speaker selection for every English model family instead of assuming `EN-Default` exists.
+- Added API, CLI, package-contract, and wheel-content tests plus standard `doctor`, `deps`, `lint`, `test`, `package`, and `validate` Taskfile workflows.
+- Regenerated the deployment lock for Linux/Python 3.13 and tightened Docker build context exclusions for tests and private agent files.
 
 ### v0.1.0 (11.05.2026)
 - Moved the active Docker runtime/build baseline from `python:3.10-slim` to `python:3.11-slim`.
