@@ -1,10 +1,10 @@
 import os
 import re
 
-import cn2an
 from pypinyin import lazy_pinyin, Style
 
 # from text.symbols import punctuation
+from .chinese_numbers import normalize_chinese_numbers
 from .symbols import language_tone_start_map
 from .tone_sandhi import ToneSandhi
 from .english import g2p as g2p_en
@@ -187,9 +187,7 @@ def _g2p(segments):
 
 
 def text_normalize(text):
-    numbers = re.findall(r"\d+(?:\.?\d+)?", text)
-    for number in numbers:
-        text = text.replace(number, cn2an.an2cn(number), 1)
+    text = normalize_chinese_numbers(text)
     text = replace_punctuation(text)
     return text
 

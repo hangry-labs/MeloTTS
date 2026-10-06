@@ -1,6 +1,7 @@
 # Python cache and notebooks
 __pycache__/
 .ipynb_checkpoints/
+.venv/
 
 # Model and output folders
 basetts_outputs_use_bert/

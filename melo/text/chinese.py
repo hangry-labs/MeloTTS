@@ -1,9 +1,9 @@
 import os
 import re
 
-import cn2an
 from pypinyin import lazy_pinyin, Style
 
+from .chinese_numbers import normalize_chinese_numbers
 from .symbols import punctuation
 from .tone_sandhi import ToneSandhi
 
@@ -169,9 +169,7 @@ def _g2p(segments):
 
 
 def text_normalize(text):
-    numbers = re.findall(r"\d+(?:\.?\d+)?", text)
-    for number in numbers:
-        text = text.replace(number, cn2an.an2cn(number), 1)
+    text = normalize_chinese_numbers(text)
     text = replace_punctuation(text)
     return text
 
