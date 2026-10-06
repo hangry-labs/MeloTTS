@@ -7,19 +7,29 @@ WORKDIR /app
 
 # Install system-level dependencies once
 RUN apt-get update && apt-get install -y \
-    build-essential libsndfile1 curl \
+    build-essential libsndfile1 libmecab-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the deployment lock first so dependency installation remains cacheable.
 COPY requirements.txt .
 
-# Install Python dependencies (PostInstall will auto-download unidic!)
+# Install Python dependencies before adding the verified UniDic archive below.
 RUN pip install --upgrade pip setuptools wheel
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu130
 ARG TORCH_PACKAGES="torch==2.11.0+cu130 torchaudio==2.11.0+cu130"
 RUN pip install --extra-index-url ${TORCH_INDEX_URL} -r requirements.txt
 RUN pip install --index-url ${TORCH_INDEX_URL} ${TORCH_PACKAGES}
-RUN python -m unidic download
+ARG UNIDIC_VERSION=3.1.0+2021-08-31
+ARG UNIDIC_DOWNLOAD_URL=https://cotonoha-dic.s3-ap-northeast-1.amazonaws.com/unidic-3.1.0.zip
+ARG UNIDIC_SHA256=638718c4c63625ab300de4c92c67925d54c0e9e3830009eaa992f29819d59c43
+COPY scripts/install_unidic.py /tmp/install_unidic.py
+RUN --mount=type=bind,source=.build-cache/unidic,target=/tmp/unidic-cache,ro \
+    python /tmp/install_unidic.py \
+        --version "${UNIDIC_VERSION}" \
+        --url "${UNIDIC_DOWNLOAD_URL}" \
+        --sha256 "${UNIDIC_SHA256}" \
+        --archive /tmp/unidic-cache/unidic-3.1.0.zip \
+    && rm /tmp/install_unidic.py
 
 # Copy only inference sources before model preload. UI and API-only edits can then
 # reuse the expensive model-download layer.
@@ -78,7 +88,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsndfile1 curl ffmpeg \
+    libsndfile1 libmecab2 curl ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 ARG APP_VERSION=unknown

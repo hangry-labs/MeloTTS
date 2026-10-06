@@ -6,6 +6,7 @@ import os
 import threading
 from pathlib import Path
 
+import numpy as np
 import soundfile as sf
 import torch
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -22,12 +23,14 @@ from melo.audio import (
     STREAM_FORMATS,
     apply_audio_effects,
     audio_effects_enabled,
+    compact_ssml_speech_audio,
     encode_audio_bytes,
     encode_mp3_stream,
     encode_pcm_s16le,
     get_supported_output_formats,
     normalize_output_format,
     normalize_stream_format,
+    resample_audio,
 )
 from melo.openai_compat import (
     OpenAIAPIError,
@@ -48,6 +51,20 @@ from melo.schemas import (
     TextModel,
 )
 from melo.split_utils import split_sentence
+from melo.ssml import (
+    MAX_PITCH_SEMITONES,
+    MAX_SPEED,
+    MAX_TEMPO,
+    MAX_VOLUME,
+    MIN_PITCH_SEMITONES,
+    MIN_SPEED,
+    MIN_TEMPO,
+    MIN_VOLUME,
+    SSMLProsody,
+    SSMLSynthesisUnit,
+    SSMLValidationError,
+    compile_ssml,
+)
 from melo.standalone_ui.server import create_app as create_ui_app
 
 APP_ROOT = Path(__file__).resolve().parent.parent
@@ -375,6 +392,10 @@ def get_status_payload():
         },
         "output_formats": get_supported_output_formats(),
         "stream_formats": STREAM_FORMATS,
+        "input_types": {
+            "text": {"label": "Plain text", "experimental": False},
+            "ssml": {"label": "SSML", "experimental": True},
+        },
     }
 
 
@@ -442,6 +463,210 @@ def resolve_speaker_id(body, model):
             status_code=400,
             detail=f"Invalid speaker_id '{body.speaker_id}'",
         ) from error
+
+
+SSML_LANGUAGE_ALIASES = {
+    "es": "ES",
+    "es-es": "ES",
+    "fr": "FR",
+    "fr-fr": "FR",
+    "zh": "ZH",
+    "zh-cn": "ZH",
+    "zh-hans": "ZH",
+    "ja": "JP",
+    "ja-jp": "JP",
+    "jp": "JP",
+    "ko": "KR",
+    "ko-kr": "KR",
+    "kr": "KR",
+}
+
+
+def resolve_ssml_language(value: str, default_language: str) -> str:
+    normalized = value.strip().replace("_", "-").lower()
+    exact = next((language for language in LANGUAGES if language.lower() == normalized), None)
+    if exact:
+        return exact
+    if normalized == "en" or normalized.startswith("en-"):
+        if default_language.startswith("EN") and default_language in LANGUAGES:
+            return default_language
+        for candidate in ("EN_NEWEST", "EN_V2", "EN"):
+            if candidate in LANGUAGES:
+                return candidate
+    resolved = SSML_LANGUAGE_ALIASES.get(normalized)
+    if resolved in LANGUAGES:
+        return resolved
+    raise ValueError(
+        f"Unsupported or unavailable SSML language '{value}'. See /tts/languages."
+    )
+
+
+def resolve_ssml_voice_language(voice: str, default_language: str) -> str:
+    if voice in get_speakers_for_language(default_language):
+        return default_language
+    preferred = ["EN_NEWEST", "EN_V2", "EN"]
+    candidates = preferred + [language for language in LANGUAGES if language not in preferred]
+    for language in candidates:
+        if voice in get_speakers_for_language(language):
+            return language
+    raise ValueError(f"Voice '{voice}' is not loaded. See /tts/voices.")
+
+
+def prepare_ssml_plan(body: TextModel) -> list[SSMLSynthesisUnit]:
+    try:
+        plan = compile_ssml(
+            body.text,
+            body.language,
+            default_voice=body.speaker_id,
+            resolve_language=lambda value: resolve_ssml_language(value, body.language),
+            resolve_voice_language=lambda voice: resolve_ssml_voice_language(
+                voice, body.language
+            ),
+        )
+        for unit in plan:
+            if unit.kind != "speech":
+                continue
+            speakers = get_speakers_for_language(unit.language)
+            if not speakers:
+                raise SSMLValidationError(
+                    f"SSML language model '{unit.language}' is not loaded."
+                )
+            if unit.voice not in speakers:
+                raise SSMLValidationError(
+                    f"Voice '{unit.voice}' is not available for language model "
+                    f"'{unit.language}'. Use <voice> to select one of: {', '.join(speakers)}."
+                )
+            effective_ssml_prosody(unit.prosody, body)
+        return plan
+    except SSMLValidationError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+def effective_ssml_prosody(prosody: SSMLProsody, body: TextModel) -> SSMLProsody:
+    effective = SSMLProsody(
+        speed=body.speed * prosody.speed,
+        pitch_semitones=body.pitch_semitones + prosody.pitch_semitones,
+        tempo=body.tempo * prosody.tempo,
+        volume=body.volume * prosody.volume,
+    )
+    ranges = (
+        ("speed", effective.speed, MIN_SPEED, MAX_SPEED),
+        ("pitch", effective.pitch_semitones, MIN_PITCH_SEMITONES, MAX_PITCH_SEMITONES),
+        ("tempo", effective.tempo, MIN_TEMPO, MAX_TEMPO),
+        ("volume", effective.volume, MIN_VOLUME, MAX_VOLUME),
+    )
+    for name, value, minimum, maximum in ranges:
+        if not minimum <= value <= maximum:
+            raise SSMLValidationError(
+                f"Effective SSML {name}, including the request-level control, "
+                f"must be between {minimum:g} and {maximum:g}."
+            )
+    return effective
+
+
+def ssml_output_sample_rate(body: TextModel) -> int:
+    return get_model(body).hps.data.sampling_rate
+
+
+def synthesize_ssml_speech(unit: SSMLSynthesisUnit, body: TextModel) -> tuple[np.ndarray, int]:
+    with MODEL_LOCK:
+        model = models.get(unit.language)
+    if model is None:
+        raise HTTPException(
+            status_code=404, detail=f"Language '{unit.language}' is not loaded"
+        )
+    speaker_id = model.hps.data.spk2id[unit.voice]
+    sample_rate = model.hps.data.sampling_rate
+    effective = effective_ssml_prosody(unit.prosody, body)
+    sentence_audio = list(
+        model.iter_audio_segments(
+            unit.text,
+            speaker_id,
+            speed=effective.speed,
+            sdp_ratio=body.sdp_ratio,
+            noise_scale=body.noise_scale,
+            noise_scale_w=body.noise_scale_w,
+            quiet=True,
+            include_silence=False,
+        )
+    )
+    if not sentence_audio:
+        return np.zeros(0, dtype=np.float32), sample_rate
+    pause = np.zeros(round(sample_rate * 0.05 / effective.speed), dtype=np.float32)
+    pieces = []
+    for index, audio in enumerate(sentence_audio):
+        if index:
+            pieces.append(pause)
+        pieces.append(np.asarray(audio, dtype=np.float32))
+    audio = np.concatenate(pieces)
+    if audio_effects_enabled(
+        effective.pitch_semitones, effective.tempo, effective.volume, False
+    ):
+        audio = apply_audio_effects(
+            audio,
+            sample_rate,
+            pitch_semitones=effective.pitch_semitones,
+            tempo=effective.tempo,
+            volume=effective.volume,
+            normalize=False,
+        )
+    return audio, sample_rate
+
+
+def iter_ssml_audio(
+    body: TextModel,
+    plan: list[SSMLSynthesisUnit],
+    output_sample_rate: int,
+    *,
+    normalize_chunks: bool,
+):
+    with INFERENCE_LOCK:
+        for index, unit in enumerate(plan):
+            if unit.kind == "break":
+                yield np.zeros(
+                    round(output_sample_rate * unit.duration_ms / 1000),
+                    dtype=np.float32,
+                )
+                continue
+            audio, source_rate = synthesize_ssml_speech(unit, body)
+            source_duration = len(audio) / source_rate if source_rate else 0
+            audio = resample_audio(audio, source_rate, output_sample_rate)
+            audio = compact_ssml_speech_audio(
+                audio,
+                trim_leading=index > 0,
+                trim_trailing=index < len(plan) - 1,
+                append_implicit_pause=(
+                    index < len(plan) - 1 and plan[index + 1].kind == "speech"
+                ),
+                sample_rate=output_sample_rate,
+            )
+            logger.info(
+                "Synthesized SSML unit %d/%d: language=%s, speaker=%s, raw=%.3fs, output=%.3fs",
+                index + 1,
+                len(plan),
+                unit.language,
+                unit.voice,
+                source_duration,
+                len(audio) / output_sample_rate if output_sample_rate else 0,
+            )
+            if normalize_chunks and body.normalize and audio.size:
+                audio = apply_audio_effects(audio, output_sample_rate, normalize=True)
+            yield audio
+
+
+def ssml_response_headers(
+    body: TextModel,
+    plan: list[SSMLSynthesisUnit],
+    sample_rate: int,
+) -> dict[str, str]:
+    languages = list(dict.fromkeys(unit.language for unit in plan if unit.kind == "speech"))
+    speakers = list(dict.fromkeys(unit.voice for unit in plan if unit.kind == "speech"))
+    return {
+        "X-MeloTTS-Input-Type": "ssml",
+        "X-MeloTTS-Language": ",".join(languages),
+        "X-MeloTTS-Speaker": ",".join(speakers),
+        "X-MeloTTS-Sample-Rate": str(sample_rate),
+    }
 
 
 api = FastAPI(
@@ -605,6 +830,11 @@ async def defaults():
         "quotes": QUOTE_BANK,
         "presets": PARAMETER_PRESETS,
         "audio_controls": AUDIO_CONTROL_DEFAULTS,
+        "input_type": "text",
+        "input_types": {
+            "text": {"label": "Plain text", "experimental": False},
+            "ssml": {"label": "SSML", "experimental": True},
+        },
         "capabilities": {
             "native_controls": ["speed", "sdp_ratio", "noise_scale", "noise_scale_w"],
             "post_processing_controls": list(AUDIO_CONTROL_DEFAULTS),
@@ -632,6 +862,7 @@ async def stream_formats():
             "The model emits complete sentence segments, not token-level audio.",
             "pcm_s16le is raw mono 16-bit little-endian PCM at the model sample rate.",
             "mp3 uses one continuous encoder fed by sentence-level PCM chunks.",
+            "SSML streams ordered speech and break units from the same plan as full generation.",
         ],
     }
 
@@ -661,6 +892,33 @@ async def voices():
 @api.post("/tts/metrics")
 async def metrics(body: MetricsModel):
     logger.info(f"/tts/metrics request received for language={body.language}")
+    if body.input_type == "ssml":
+        with MODEL_LOCK:
+            model = models.get(body.language)
+        if model is None:
+            raise HTTPException(status_code=404, detail=f"Language '{body.language}' is not loaded")
+        speakers = list(model.hps.data.spk2id)
+        if not speakers:
+            raise HTTPException(status_code=404, detail="No speaker is available for this language")
+        request = TextModel(
+            text=body.text,
+            input_type="ssml",
+            language=body.language,
+            speaker_id=speakers[0],
+        )
+        plan = prepare_ssml_plan(request)
+        speech = [unit for unit in plan if unit.kind == "speech"]
+        return {
+            "language": body.language,
+            "input_type": "ssml",
+            "metrics": {
+                "characters": len(body.text),
+                "words": len(body.text.split()),
+                "segments": len(speech),
+                "voices": list(dict.fromkeys(unit.voice for unit in speech)),
+                "languages": list(dict.fromkeys(unit.language for unit in speech)),
+            },
+        }
     return {"language": body.language, "metrics": get_text_metrics(body.text, body.language)}
 
 
@@ -676,8 +934,9 @@ async def load_model(body: LanguageAction):
 
 def log_synthesis_request(route_name, body, response_format):
     logger.info(
-        "%s request: language=%s, speaker=%s, characters=%d, format=%s",
+        "%s request: input_type=%s, language=%s, speaker=%s, characters=%d, format=%s",
         route_name,
+        body.input_type,
         body.language,
         body.speaker_id,
         len(body.text),
@@ -685,7 +944,52 @@ def log_synthesis_request(route_name, body, response_format):
     )
 
 
+def stream_ssml_audio(body: TextModel, route_name: str):
+    try:
+        output_format = normalize_output_format(body.output_format)
+        log_synthesis_request(route_name, body, output_format)
+        plan = prepare_ssml_plan(body)
+        sample_rate = ssml_output_sample_rate(body)
+        chunks = list(
+            iter_ssml_audio(
+                body,
+                plan,
+                sample_rate,
+                normalize_chunks=False,
+            )
+        )
+        audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+        if body.normalize and audio.size:
+            audio = apply_audio_effects(audio, sample_rate, normalize=True)
+        output_bio = encode_audio_bytes(audio, sample_rate, output_format)
+        duration = len(audio) / sample_rate if sample_rate else 0
+        format_config = OUTPUT_FORMATS[output_format]
+        headers = ssml_response_headers(body, plan, sample_rate)
+        headers.update(
+            {
+                "Content-Disposition": (
+                    f"attachment; filename=tts_ssml.{format_config['extension']}"
+                ),
+                "X-MeloTTS-Duration": f"{duration:.3f}",
+            }
+        )
+        if output_format != "wav":
+            headers["X-MeloTTS-Format"] = output_format
+        return StreamingResponse(
+            output_bio,
+            media_type=format_config["media_type"],
+            headers=headers,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error during SSML generation")
+        return JSONResponse(status_code=500, content={"error": "SSML generation failed"})
+
+
 def stream_tts_audio(body: TextModel, route_name: str):
+    if body.input_type == "ssml":
+        return stream_ssml_audio(body, route_name)
     try:
         output_format = normalize_output_format(body.output_format)
         log_synthesis_request(route_name, body, output_format)
@@ -777,7 +1081,59 @@ def iter_stream_audio(body: StreamingTextModel, model: TTS, stream_format: str, 
         yield from encode_mp3_stream(pcm_chunks(), sample_rate)
 
 
+def iter_stream_ssml_audio(
+    body: StreamingTextModel,
+    plan: list[SSMLSynthesisUnit],
+    stream_format: str,
+    sample_rate: int,
+):
+    def pcm_chunks():
+        for audio in iter_ssml_audio(
+            body,
+            plan,
+            sample_rate,
+            normalize_chunks=True,
+        ):
+            yield encode_pcm_s16le(audio)
+
+    if stream_format == "pcm_s16le":
+        yield from pcm_chunks()
+    elif stream_format == "mp3":
+        yield from encode_mp3_stream(pcm_chunks(), sample_rate)
+
+
+def stream_ssml_audio_segments(body: StreamingTextModel, route_name: str):
+    try:
+        stream_format = normalize_stream_format(body.stream_format)
+        log_synthesis_request(route_name, body, stream_format)
+        plan = prepare_ssml_plan(body)
+        sample_rate = ssml_output_sample_rate(body)
+        format_config = STREAM_FORMATS[stream_format]
+        headers = ssml_response_headers(body, plan, sample_rate)
+        headers.update(
+            {
+                "Content-Disposition": (
+                    f"attachment; filename=tts_ssml_stream.{format_config['extension']}"
+                ),
+                "X-MeloTTS-Stream-Format": stream_format,
+                "X-MeloTTS-Stream-Granularity": "ssml-unit",
+            }
+        )
+        return StreamingResponse(
+            iter_stream_ssml_audio(body, plan, stream_format, sample_rate),
+            media_type=format_config["media_type"].format(sample_rate=sample_rate),
+            headers=headers,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error during streaming SSML generation")
+        return JSONResponse(status_code=500, content={"error": "Streaming SSML generation failed"})
+
+
 def stream_tts_audio_segments(body: StreamingTextModel, route_name: str):
+    if body.input_type == "ssml":
+        return stream_ssml_audio_segments(body, route_name)
     try:
         if not body.text.strip():
             raise HTTPException(status_code=400, detail="Text must not be empty")

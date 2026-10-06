@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -5,6 +7,13 @@ class TextModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     text: str = Field(..., description="Text to synthesize.")
+    input_type: Literal["text", "ssml"] = Field(
+        "text",
+        description=(
+            "Input interpretation. Experimental SSML must be selected explicitly and "
+            "can route language, speaker, or optional prosody per segment."
+        ),
+    )
     speed: float = Field(1.0, ge=0.5, le=2.0, description="Speech speed multiplier.")
     language: str = Field("EN", description="Loaded language/model code.")
     speaker_id: str = Field(..., description="Speaker ID from /tts/speakers.")
@@ -93,6 +102,9 @@ class OpenAISpeechRequest(BaseModel):
 
 class MetricsModel(BaseModel):
     text: str = Field("", description="Text to inspect.")
+    input_type: Literal["text", "ssml"] = Field(
+        "text", description="Interpret input as plain text or experimental SSML."
+    )
     language: str = Field("EN", description="Language/model code used for sentence splitting.")
 
 

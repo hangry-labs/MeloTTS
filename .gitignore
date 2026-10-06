@@ -17,6 +17,9 @@ dist/
 *.zip
 *.wav
 
+# Immutable build input restored by CI or downloaded from the LAN mirror.
+/.build-cache/unidic/*.zip
+
 # IntelliJ IDEA project folder
 .idea/
 .idea/*

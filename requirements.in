@@ -2,6 +2,7 @@
 
 click
 cn2an
+defusedxml==0.7.1
 fastapi
 fugashi
 g2p-en
@@ -17,6 +18,7 @@ inflect
 jamo
 jieba
 mecab-python3
+python-mecab-ko
 nltk
 num2words
 numba

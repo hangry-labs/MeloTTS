@@ -4,6 +4,7 @@ Main project links:
 
 - GitHub: https://github.com/hangry-labs/MeloTTS
 - Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
+- SSML dialogues: https://hangry-labs.github.io/MeloTTS/examples/ssml.html
 - Docker Hub: https://hub.docker.com/r/hangrylabs/melotts/tags
 - GitHub Container Registry: https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts
 - Hangry Labs: https://hangrylabs.app/
@@ -31,7 +32,9 @@ images already include it.
 
 ### Build image  
 You need docker to be working. (Example : Docker Desktop)  
-`docker build -t melotts:test .`
+`task image`
+
+Local task builds first check the LAN UniDic mirror at `http://192.168.0.54:5080`. If it is unavailable, the build automatically uses the checksum-verified public source. A plain `docker build -t melotts:test .` always uses the portable public default. GitHub Actions stores the same verified archive in its own build cache.
 
 ### Run image  
 `docker run -p 8888:8888 --gpus all melotts:test`
@@ -114,6 +117,43 @@ curl -v http://localhost:8888/tts/formats
 ```
 
 The UI has an Output Format dropdown and defaults to MP3. The API remains WAV-by-default when `format` is omitted.
+
+### Check API - SSML dialogue
+
+SSML must always be enabled explicitly with `"input_type":"ssml"`. This example switches between two loaded language models and inserts an exact pause:
+
+```bash
+curl -v -X POST http://localhost:8888/tts/generate ^
+  -H "Content-Type: application/json" ^
+  -d "{\"input_type\":\"ssml\",\"text\":\"<speak><voice name='EN-Newest'>Good morning.</voice><break time='250ms'/><voice name='ES'>Buenos dias.</voice></speak>\",\"language\":\"EN_NEWEST\",\"speaker_id\":\"EN-Newest\",\"format\":\"mp3\"}" ^
+  --output dialogue.mp3
+```
+
+Use the running service to confirm exact speaker names before writing dialogue:
+
+```bash
+curl -v http://localhost:8888/tts/voices
+```
+
+The browser UI has an orange SSML mode button and an `i` button with the complete supported subset. Plain text remains the default. Melo uses separate language checkpoints, so `<lang>` can retain a speaker only when that speaker exists in the target model. Use `<voice>` to switch models and speakers for reliable multilingual dialogue. Direct `<phoneme>` input is intentionally unsupported.
+
+### Regenerate the published SSML dialogue examples
+
+Start the full local service first. The generation task sends every checked-in script to the live API, verifies the response metadata and duration, and only then replaces the MP3 file:
+
+```powershell
+task localrun
+task imagewait
+task ssml-examples
+```
+
+Generate just one named example while editing it:
+
+```powershell
+task ssml-examples SSML_EXAMPLE="Studio readiness"
+```
+
+Use another server by setting `SSML_BASE_URL`, for example `task ssml-examples SSML_BASE_URL=http://server:8888`. The script definitions live in `scripts/generate-ssml-examples.ps1`; the public page is `examples/ssml.html`. Keep that PowerShell script ASCII-only and represent non-ASCII dialogue with `\uXXXX` escapes through `Expand-UnicodeEscapes`. Task runs it with Windows PowerShell 5.1, which can otherwise corrupt UTF-8 source text before it reaches the API.
 
 ### Check API - streaming tts
 Streaming is sentence-level. The model makes one audio segment per sentence, then the API sends that segment immediately.

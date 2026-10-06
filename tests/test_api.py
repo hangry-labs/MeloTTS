@@ -165,6 +165,72 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.headers["x-melotts-stream-granularity"], "sentence")
         self.assertEqual(len(response.content), 2048)
 
+    def test_generate_supports_explicit_ssml_without_changing_plain_text_default(self):
+        response = self.client.post(
+            "/tts/generate",
+            json=self.request_body(
+                input_type="ssml",
+                text="<speak>Hello.<break time='100ms'/>World.</speak>",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["x-melotts-input-type"], "ssml")
+        self.assertEqual(response.headers["x-melotts-language"], "EN")
+        self.assertEqual(response.headers["x-melotts-speaker"], "EN-BR")
+        audio, sample_rate = sf.read(io.BytesIO(response.content))
+        self.assertEqual(sample_rate, 22050)
+        self.assertGreater(len(audio), 2205)
+
+    def test_ssml_rejects_unsafe_xml_and_voice_language_mismatch(self):
+        unsafe = self.client.post(
+            "/tts/generate",
+            json=self.request_body(
+                input_type="ssml",
+                text='<!DOCTYPE speak [<!ENTITY x "hello">]><speak>&x;</speak>',
+            ),
+        )
+        mismatch = self.client.post(
+            "/tts/generate",
+            json=self.request_body(
+                input_type="ssml",
+                text='<speak><lang xml:lang="es-ES">Hola.</lang></speak>',
+            ),
+        )
+
+        self.assertEqual(unsafe.status_code, 400)
+        self.assertIn("Invalid or unsafe SSML", unsafe.json()["detail"])
+        self.assertEqual(mismatch.status_code, 400)
+        self.assertIn("SSML language model 'ES' is not loaded", mismatch.json()["detail"])
+
+    def test_ssml_stream_uses_the_shared_plan(self):
+        response = self.client.post(
+            "/tts/stream",
+            json=self.request_body(
+                input_type="ssml",
+                text="<speak>Hello.<break time='0ms'/>World.</speak>",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["x-melotts-input-type"], "ssml")
+        self.assertEqual(response.headers["x-melotts-stream-granularity"], "ssml-unit")
+        self.assertGreater(len(response.content), 0)
+
+    def test_metrics_validate_and_describe_ssml(self):
+        response = self.client.post(
+            "/tts/metrics",
+            json={
+                "text": "<speak>Hello.<break time='100ms'/>World.</speak>",
+                "input_type": "ssml",
+                "language": "EN",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["input_type"], "ssml")
+        self.assertEqual(response.json()["metrics"]["segments"], 2)
+
     def test_deprecated_route_remains_backward_compatible(self):
         response = self.client.post("/tts/convert/tts", json=self.request_body())
 

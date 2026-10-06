@@ -11,9 +11,11 @@ from melo.audio import (
     atempo_filters,
     audio_effects_enabled,
     build_audio_effect_filters,
+    compact_ssml_speech_audio,
     encode_audio_bytes,
     encode_mp3_stream,
     get_supported_output_formats,
+    trim_silent_audio_edges,
 )
 
 
@@ -44,6 +46,54 @@ class AudioEffectsTests(unittest.TestCase):
     def test_atempo_splits_values_outside_single_filter_range(self):
         self.assertEqual(atempo_filters(4), ["atempo=2.0", "atempo=2.000000"])
         self.assertEqual(atempo_filters(0.25), ["atempo=0.5", "atempo=0.500000"])
+
+    def test_ssml_compaction_only_trims_requested_edges_and_adds_exact_handoff(self):
+        sample_rate = 1000
+        audio = np.concatenate(
+            (
+                np.zeros(100, dtype=np.float32),
+                np.full(200, 0.5, dtype=np.float32),
+                np.zeros(100, dtype=np.float32),
+            )
+        )
+
+        leading_only = trim_silent_audio_edges(
+            audio, sample_rate, leading=True, trailing=False
+        )
+        compacted = compact_ssml_speech_audio(
+            audio,
+            trim_leading=True,
+            trim_trailing=True,
+            append_implicit_pause=True,
+            sample_rate=sample_rate,
+        )
+
+        self.assertEqual(len(leading_only), 300)
+        self.assertEqual(len(compacted), 300)
+        np.testing.assert_array_equal(compacted[:200], np.full(200, 0.5, dtype=np.float32))
+        np.testing.assert_array_equal(compacted[200:], np.zeros(100, dtype=np.float32))
+
+    def test_ssml_compaction_preserves_quiet_model_speech(self):
+        sample_rate = 1000
+        quiet_speech = np.linspace(-0.0005, 0.0005, 200, dtype=np.float32)
+        audio = np.concatenate(
+            (
+                np.zeros(100, dtype=np.float32),
+                quiet_speech,
+                np.zeros(100, dtype=np.float32),
+            )
+        )
+
+        compacted = compact_ssml_speech_audio(
+            audio,
+            trim_leading=True,
+            trim_trailing=True,
+            append_implicit_pause=False,
+            sample_rate=sample_rate,
+        )
+
+        self.assertGreaterEqual(len(compacted), len(quiet_speech))
+        self.assertGreater(float(np.max(np.abs(compacted))), 0.0004)
 
     @patch("melo.audio._run_ffmpeg")
     def test_effect_processing_returns_float_audio(self, run_ffmpeg):

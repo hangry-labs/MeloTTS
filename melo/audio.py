@@ -89,6 +89,11 @@ STREAM_FORMAT_ALIASES = {
     "mpeg": "mp3",
 }
 
+SSML_IMPLICIT_PAUSE_MS = 100
+SSML_SILENCE_THRESHOLD_DB = -50.0
+SSML_SILENCE_RELATIVE_DB = -40.0
+SSML_SILENCE_FRAME_MS = 10
+
 
 def audio_effects_enabled(
     pitch_semitones=0.0,
@@ -192,6 +197,73 @@ def apply_audio_effects(
     ]
     output = _run_ffmpeg(command, source.getvalue(), "apply audio controls")
     return np.frombuffer(output, dtype="<f4").astype(np.float32, copy=True)
+
+
+def resample_audio(audio, source_rate, target_rate):
+    """Resample mono float audio when an SSML plan crosses model sample rates."""
+    audio = np.asarray(audio, dtype=np.float32)
+    if audio.size == 0 or source_rate == target_rate:
+        return audio
+    import torch
+    from torchaudio.functional import resample
+
+    waveform = torch.from_numpy(audio)
+    return resample(waveform, source_rate, target_rate).numpy().astype(np.float32, copy=False)
+
+
+def trim_silent_audio_edges(
+    audio,
+    sample_rate,
+    *,
+    leading=False,
+    trailing=False,
+    threshold_db=SSML_SILENCE_THRESHOLD_DB,
+    frame_ms=SSML_SILENCE_FRAME_MS,
+):
+    """Trim low-energy outer frames while leaving interior and recording edges intact."""
+    audio = np.asarray(audio)
+    if audio.size == 0 or not (leading or trailing):
+        return audio
+    normalized = audio.astype(np.float32, copy=False)
+    frame_samples = max(1, round(sample_rate * frame_ms / 1000))
+    frame_count = (len(normalized) + frame_samples - 1) // frame_samples
+    padded = np.pad(normalized, (0, frame_count * frame_samples - len(normalized)))
+    frames = padded.reshape(frame_count, frame_samples)
+    rms = np.sqrt(np.mean(np.square(frames), axis=1))
+    peak_rms = float(np.max(rms))
+    absolute_threshold = 10 ** (threshold_db / 20)
+    relative_threshold = peak_rms * 10 ** (SSML_SILENCE_RELATIVE_DB / 20)
+    active_frames = np.flatnonzero(rms >= min(absolute_threshold, relative_threshold))
+    if active_frames.size == 0:
+        return audio
+    start = int(active_frames[0]) * frame_samples if leading else 0
+    end = (
+        min((int(active_frames[-1]) + 1) * frame_samples, len(audio))
+        if trailing
+        else len(audio)
+    )
+    return audio[start:end]
+
+
+def compact_ssml_speech_audio(
+    audio,
+    *,
+    trim_leading,
+    trim_trailing,
+    append_implicit_pause,
+    sample_rate,
+):
+    """Remove internal model padding and add the default SSML turn handoff."""
+    compacted = trim_silent_audio_edges(
+        audio,
+        sample_rate,
+        leading=trim_leading,
+        trailing=trim_trailing,
+    )
+    if not append_implicit_pause:
+        return compacted
+    pause = np.zeros(round(SSML_IMPLICIT_PAUSE_MS * sample_rate / 1000), dtype=np.float32)
+    return np.concatenate((compacted, pause))
 
 
 def get_supported_output_formats():

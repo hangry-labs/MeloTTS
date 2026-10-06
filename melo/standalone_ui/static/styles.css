@@ -417,7 +417,7 @@ pre { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   .runtime-badge { grid-template-columns: auto minmax(0, 1fr) auto; width: 100%; }
   .runtime-version { grid-column: auto; align-self: stretch; padding: 0 0 0 10px; border-top: 0; border-left: 1px solid rgba(255, 255, 255, 0.1); }
   html[data-header-collapsed="true"] .brand-hero .labs-signature, html[data-header-collapsed="true"] .brand-hero .labs-logo, html[data-header-collapsed="true"] .brand-hero .collapsed-mascot { width: 44px; height: 44px; }
-  html[data-header-collapsed="true"] .brand-hero { grid-template-columns: 44px 44px minmax(0, 1fr); gap: 8px 10px; padding: 10px 16px 14px; }
+  html[data-header-collapsed="true"] .brand-hero { grid-template-columns: 44px 44px minmax(0, 1fr); gap: 8px 10px; padding: 30px 16px 14px; }
   html[data-header-collapsed="true"] .brand-hero .brand-nav { gap: 8px; }
   html[data-header-collapsed="true"] .brand-hero .brand-links { width: 100%; max-width: none; }
   html[data-header-collapsed="true"] .brand-hero .brand-links a { min-height: 32px; padding: 0 8px; font-size: 0.7rem; }
@@ -448,10 +448,11 @@ pre { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   .ssml-mode-control { justify-content: space-between; }
   .ssml-mode-button { flex: 1; }
   .ssml-rule-grid { grid-template-columns: 1fr; }
+  .range-control { position: relative; }
+  .range-control .setting-help { position: static; }
+  .range-control .setting-tooltip, .range-grid label:last-child .setting-tooltip { right: auto; left: 0; width: min(270px, 100%); }
+  .range-control .setting-tooltip::before, .range-grid label:last-child .setting-tooltip::before { display: none; }
   .command-row { grid-template-columns: 1fr; }
-  .setting-tooltip { width: min(270px, calc(100vw - 48px)); }
-  .range-grid label:last-child .setting-tooltip { right: auto; left: 0; }
-  .range-grid label:last-child .setting-tooltip::before { right: auto; left: 5px; }
   .output-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
   .output-options { justify-content: stretch; }
   .output-options .compact-field { width: 100%; }

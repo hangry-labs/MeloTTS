@@ -4,7 +4,9 @@ param(
     [string]$Profile,
 
     [Parameter(Mandatory = $true)]
-    [string]$Image
+    [string]$Image,
+
+    [string]$UniDicLanUrl = ""
 )
 
 Set-StrictMode -Version Latest
@@ -29,17 +31,35 @@ $languages = if ($Profile -eq "FULL") {
 }
 $buildId = "$buildDate@$vcsRef"
 
+$unidicDownloadUrl = ""
+if (-not [string]::IsNullOrWhiteSpace($UniDicLanUrl)) {
+    try {
+        Invoke-WebRequest -UseBasicParsing -Method Head -Uri $UniDicLanUrl -TimeoutSec 3 | Out-Null
+        $unidicDownloadUrl = $UniDicLanUrl
+        Write-Host "Using LAN UniDic mirror: $unidicDownloadUrl"
+    }
+    catch {
+        Write-Warning "LAN UniDic mirror is unavailable; using the verified public source."
+    }
+}
+
+$dockerArguments = @(
+    "build",
+    "--build-arg", "APP_VERSION=$appVersion",
+    "--build-arg", "BUILD_DATE=$buildDate",
+    "--build-arg", "BUILD_ID=$buildId",
+    "--build-arg", "VCS_REF=$vcsRef",
+    "--build-arg", "INIT_DOWNLOADS_PROFILE=$Profile",
+    "--build-arg", "INIT_DOWNLOADS_STRICT=1",
+    "--build-arg", "DEFAULT_TTS_LANGUAGES=$languages"
+)
+if ($unidicDownloadUrl) {
+    $dockerArguments += @("--build-arg", "UNIDIC_DOWNLOAD_URL=$unidicDownloadUrl")
+}
+$dockerArguments += @("-t", $Image, $repoRoot)
+
 Write-Host "Building $Image ($Profile) at $buildDate from $vcsRef"
-& docker build `
-    --build-arg "APP_VERSION=$appVersion" `
-    --build-arg "BUILD_DATE=$buildDate" `
-    --build-arg "BUILD_ID=$buildId" `
-    --build-arg "VCS_REF=$vcsRef" `
-    --build-arg "INIT_DOWNLOADS_PROFILE=$Profile" `
-    --build-arg "INIT_DOWNLOADS_STRICT=1" `
-    --build-arg "DEFAULT_TTS_LANGUAGES=$languages" `
-    -t $Image `
-    $repoRoot
+& docker @dockerArguments
 
 if ($LASTEXITCODE -ne 0) {
     throw "Docker build failed with exit code $LASTEXITCODE."

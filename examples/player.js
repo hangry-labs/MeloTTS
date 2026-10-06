@@ -101,6 +101,7 @@ players.forEach((audio) => {
   const progressFill = controls.querySelector(".progress-fill");
   const progressKnob = controls.querySelector(".progress-knob");
   const duration = controls.querySelector(".duration");
+  let suppressClickSeek = false;
 
   function setProgress(value) {
     const progress = Math.max(0, Math.min(100, value));
@@ -143,12 +144,17 @@ players.forEach((audio) => {
 
   progressButton.addEventListener("click", (event) => {
     event.stopPropagation();
+    if (suppressClickSeek) {
+      suppressClickSeek = false;
+      return;
+    }
     seekToPosition(event);
   });
 
   progressButton.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    suppressClickSeek = true;
     progressButton.setPointerCapture(event.pointerId);
     seekToPosition(event);
   });

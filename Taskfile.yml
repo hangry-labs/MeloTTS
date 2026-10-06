@@ -14,6 +14,8 @@ vars:
   API_LANGUAGE: EN
   API_SPEAKER: EN-BR
   API_FORMAT: wav
+  SSML_BASE_URL: http://localhost:{{.PORT}}
+  SSML_EXAMPLE: ''
   TEMP_AUDIO: '%TEMP%\\melotts_task'
   WAIT_URL: http://localhost:{{.PORT}}/tts/ping
   RELEASE_VERSION: ''
@@ -22,6 +24,7 @@ vars:
   SKIP_VALIDATION: '0'
   RELEASE_REMOTE: origin
   RELEASE_BRANCH: main
+  UNIDIC_LAN_URL: http://192.168.0.54:5080/unidic/unidic-3.1.0.zip
 
 tasks:
   doctor:
@@ -44,7 +47,7 @@ tasks:
   lint:
     desc: Lint the actively maintained Python application surface
     cmds:
-      - ruff check melo/app.py melo/audio.py melo/openai_compat.py melo/schemas.py melo/main.py melo/standalone_ui/server.py melo/standalone_ui/gpu.py scripts/check-wheel.py tests
+      - ruff check melo/app.py melo/audio.py melo/openai_compat.py melo/schemas.py melo/ssml.py melo/main.py melo/standalone_ui/server.py melo/standalone_ui/gpu.py scripts/check-wheel.py scripts/install_unidic.py tests
 
   test:
     desc: Run unit and repository-contract tests
@@ -69,6 +72,8 @@ tasks:
       - node --check melo/standalone_ui/static/audio-editor.js
       - node --check melo/standalone_ui/static/audio-utils.js
       - node --check melo/standalone_ui/static/i18n.js
+      - node --check examples/player.js
+      - node --check examples/ssml.js
       - task: package
       - docker build --check .
 
@@ -83,14 +88,14 @@ tasks:
       - cmd /c nvidia-smi --query-gpu=index,name --format=csv,noheader
 
   image:
-    desc: Build local MeloTTS Docker image (FULL profile)
+    desc: Build local MeloTTS Docker image (FULL profile; prefer the LAN UniDic mirror)
     cmds:
-      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-image.ps1 -Profile FULL -Image "{{.IMAGE}}"
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-image.ps1 -Profile FULL -Image "{{.IMAGE}}" -UniDicLanUrl "{{.UNIDIC_LAN_URL}}"
 
   imagesmall:
-    desc: Build local MeloTTS Docker image with the three English model families
+    desc: Build local MeloTTS image with English models (prefer the LAN UniDic mirror)
     cmds:
-      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-image.ps1 -Profile EN_ONLY -Image "{{.IMAGE}}"
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-image.ps1 -Profile EN_ONLY -Image "{{.IMAGE}}" -UniDicLanUrl "{{.UNIDIC_LAN_URL}}"
 
   imagerun:
     desc: Run existing image with full language set (default GPU_DEVICE=0)
@@ -199,6 +204,11 @@ tasks:
       - 'cmd /c curl.exe --fail-with-body -sS -X POST http://localhost:{{.PORT}}/tts/generate -H "Content-Type: application/json" -d "{\"text\":\"{{.API_TEXT}}\",\"speed\":1.0,\"language\":\"{{.API_LANGUAGE}}\",\"speaker_id\":\"{{.API_SPEAKER}}\",\"format\":\"{{.API_FORMAT}}\"}" --output {{.TEMP_AUDIO}}.{{.API_FORMAT}}'
       - 'cmd /c py -3.13 -c "from pathlib import Path; p=Path(r''{{.TEMP_AUDIO}}.{{.API_FORMAT}}''); assert p.exists() and p.stat().st_size > 0, p"'
       - 'cmd /c del /f /q {{.TEMP_AUDIO}}.{{.API_FORMAT}}'
+
+  ssml-examples:
+    desc: Regenerate and validate the published SSML dialogue MP3 files
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-ssml-examples.ps1 -BaseUrl "{{.SSML_BASE_URL}}" -ExampleName "{{.SSML_EXAMPLE}}"
 
   logs:
     desc: Show logs from the active MeloTTS container

@@ -28,7 +28,7 @@ Official images are published on [Docker Hub](https://hub.docker.com/r/hangrylab
 
 ## Listen and Have a Look
 
-[Open the interactive voice examples](https://hangry-labs.github.io/MeloTTS/examples/) to compare every bundled language and English accent. The browser application at `http://localhost:8888` adds waveform playback and trimming, generation and sentence-streaming workspaces, model controls, output controls, live API discovery, model residency management, and GPU telemetry.
+[Open the interactive voice examples](https://hangry-labs.github.io/MeloTTS/examples/) to compare every bundled language and English accent, or hear [multi-voice and multilingual SSML dialogues](https://hangry-labs.github.io/MeloTTS/examples/ssml.html). The browser application at `http://localhost:8888` adds waveform playback and trimming, generation and sentence-streaming workspaces, model controls, output controls, live API discovery, model residency management, and GPU telemetry.
 
 <p align="center">
   <a href="assets/ui.webp">
@@ -119,12 +119,13 @@ curl -X POST "http://localhost:8888/tts/generate" \
   -o output.mp3
 ```
 
-The API defaults remain backward compatible: omitted controls are neutral, and omitted `format` returns WAV. The deprecated `POST /tts/convert/tts` route remains available for existing clients.
+The API defaults remain backward compatible: omitted controls are neutral, omitted `input_type` means plain text, and omitted `format` returns WAV. The deprecated `POST /tts/convert/tts` route remains available for existing clients.
 
 ### Synthesis Controls
 
 | Field | Range and default | Behavior |
 | --- | --- | --- |
+| `input_type` | `text` or `ssml`, default `text` | Explicitly enable the supported experimental SSML subset. Markup is never inferred. |
 | `speed` | `0.5` to `2.0`, default `1.0` | Native model speaking speed. |
 | `sdp_ratio` | `0.0` to `1.0`, default `0.2` | Blend between deterministic and stochastic duration prediction. |
 | `noise_scale` | `0.0` to `1.5`, default `0.6` | Native acoustic sampling variation. |
@@ -137,6 +138,33 @@ The API defaults remain backward compatible: omitted controls are neutral, and o
 MeloTTS does not expose a trained emotion label, style token, reference-audio prompt, or direct emotional-intensity input. The stochastic controls can vary delivery, and pitch/tempo can reshape the result, but the application does not mislabel those effects as native emotion control.
 
 Neutral output-control defaults skip the extra FFmpeg pass. For local non-Docker use, FFmpeg must be installed only when pitch, tempo, volume, or normalization is changed.
+
+### Experimental SSML Input
+
+The native generation, streaming, and metrics endpoints accept experimental SSML when `input_type` is explicitly set to `ssml`. Plain text remains the backward-compatible default, and the OpenAI-compatible endpoint continues to interpret `input` as plain text.
+
+```bash
+curl -X POST "http://localhost:8888/tts/generate" \
+  -H "Content-Type: application/json" \
+  -d '{"input_type":"ssml","text":"<speak><voice name=\"EN-Newest\">Good morning.</voice><break time=\"250ms\"/><voice name=\"ES\"><prosody speed=\"0.9\" pitch=\"-1st\">Buenos dias.</prosody></voice></speak>","language":"EN_NEWEST","speaker_id":"EN-Newest","format":"mp3"}' \
+  -o dialogue.mp3
+```
+
+The supported subset is:
+
+- `<speak>`: one required root, with optional `version="1.0"` or `xml:lang`.
+- `<voice name="...">`: select a loaded speaker. Its loaded model becomes the segment language unless a language context is explicit.
+- `<lang xml:lang="...">`: select a loaded language model while retaining the current speaker. Because Melo uses separate checkpoints, that speaker must also exist in the target model; use `<voice>` for reliable multilingual dialogue.
+- `<prosody speed="0.9" pitch="+2st" tempo="1.05" volume="0.9">`: apply optional inherited controls to one segment. Nested speed, tempo, and volume multiply; pitch adds.
+- `<break time="500ms"/>`: set the complete pause at that boundary. `0ms` is valid; adjacent speech units without a break use a 100 ms handoff.
+- `<sub alias="spoken text">label</sub>`: speak the alias.
+- `<say-as interpret-as="characters|number|ordinal">`: spell characters, validate a number, or produce an English ordinal. Ordinals are limited to English models.
+
+Complete output applies segment effects before assembly, normalizes once when requested, and encodes once. Cross-model dialogue is resampled to the request's default model sample rate. Streaming executes the same plan in order and reports `X-MeloTTS-Stream-Granularity: ssml-unit`.
+
+One document is limited to 50,000 characters, 256 elements, eight nesting levels, 10 seconds per break, and 30 seconds of total explicit silence. Elements, attributes, and namespaces are allowlisted; DTDs, entities, external references, unknown markup, and malformed XML are rejected. Direct `<phoneme>` input is not supported because Melo's language frontends do not expose a safe common IPA boundary.
+
+The browser workspace exposes the same explicit orange SSML mode and an in-app rules guide. The [SSML dialogue examples](https://hangry-labs.github.io/MeloTTS/examples/ssml.html) include the exact scripts and generated MP3 files for multi-accent, multilingual, and directed-delivery demonstrations. Voice names and deployment state can be inspected through `GET /tts/voices`.
 
 ### Streaming
 
@@ -160,6 +188,7 @@ Streaming is sentence-level because the model emits complete sentence segments r
 | `GET /tts/speakers?language=EN` | Speakers for one language model. |
 | `GET /tts/formats` | File output formats and aliases. |
 | `GET /tts/stream-formats` | Streaming formats and transport notes. |
+| `POST /tts/metrics` | Plain-text sentence metrics or validated SSML plan metrics. |
 | `POST /tts/load` | Load a configured model on demand. |
 | `POST /tts/purge` | Keep one loaded model and release the others. |
 
@@ -243,6 +272,8 @@ task localdev
 - Added API, CLI, package-contract, and wheel-content tests plus standard `doctor`, `deps`, `lint`, `test`, `package`, and `validate` Taskfile workflows.
 - Regenerated the deployment lock for Linux/Python 3.13 and tightened Docker build context exclusions for tests and private agent files.
 - Added optional pitch, tempo, volume, and loudness-normalization controls to the UI, generation API, and sentence-streaming API while keeping neutral defaults backward compatible.
+- Added explicit experimental SSML to native generation, streaming, metrics, and the browser UI. The hardened bounded parser supports loaded speaker/model routing, inherited segment prosody, substitutions, character/number/English-ordinal reading, exact breaks, multilingual dialogue, and complete-file normalization while plain text remains the default.
+- Added a dedicated SSML examples page with five reproducibly generated MP3 dialogues, exact copyable scripts, branded playback controls, and a validation task for regenerating the media through a live Melo service.
 - Documented the distinction between native Melo synthesis controls, post-processing controls, and unsupported named-emotion conditioning.
 - Reorganized the README around examples, startup, API use, images, development, project context, and release history.
 

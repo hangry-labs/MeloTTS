@@ -16,6 +16,7 @@ authors = [
 dependencies = [
   "click",
   "cn2an",
+  "defusedxml==0.7.1",
   "fastapi",
   "fugashi",
   "g2p-en",
@@ -31,6 +32,7 @@ dependencies = [
   "jamo",
   "jieba",
   "mecab-python3",
+  "python-mecab-ko",
   "nltk",
   "num2words",
   "numba",

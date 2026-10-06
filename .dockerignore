@@ -27,6 +27,7 @@
 /multilingual_ckpts
 *.wav
 *.zip
+!.build-cache/unidic/*.zip
 
 # Misc local files
 .DS_Store

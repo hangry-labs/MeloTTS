@@ -17,6 +17,7 @@ def main():
         "VERSION",
         "assets/melotts_favicon.webp",
         "assets/hangrylabs_logo.webp",
+        "melo/ssml.py",
         "melo/standalone_ui/static/index.html",
         "melo/standalone_ui/static/app.js",
         "melo/standalone_ui/static/styles.css",
