@@ -182,6 +182,7 @@
         align-items: flex-start;
         color: inherit;
         display: flex;
+        flex: 0 0 auto;
         gap: 0.7rem;
         min-width: 0;
         padding: 0.1rem 0 0 0.1rem;
@@ -217,7 +218,7 @@
         align-items: start;
         display: grid;
         gap: 2rem;
-        grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.72fr);
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
       }
 
       .hero-copy {
@@ -514,7 +515,7 @@
         }
       }
 
-      @media (max-width: 900px) {
+      @media (max-width: 1140px) {
         .hero {
           grid-template-columns: 1fr;
         }
