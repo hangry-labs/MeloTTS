@@ -275,6 +275,7 @@ task localdev
 - Added explicit experimental SSML to native generation, streaming, metrics, and the browser UI. The hardened bounded parser supports loaded speaker/model routing, inherited segment prosody, substitutions, character/number/English-ordinal reading, exact breaks, multilingual dialogue, and complete-file normalization while plain text remains the default.
 - Added a dedicated SSML examples page with five reproducibly generated MP3 dialogues, exact copyable scripts, branded playback controls, and a validation task for regenerating the media through a live Melo service.
 - Documented the distinction between native Melo synthesis controls, post-processing controls, and unsupported named-emotion conditioning.
+- Fixed case-sensitive English initialisms and mixed Chinese/English product names: uppercase terms such as `US`, `NLP`, `LLM`, `AI`, `AIGC`, and `SDXL` are now spoken as letters, while lowercase words such as `us` retain their normal pronunciation and camel-case names retain their word boundaries.
 - Reorganized the README around examples, startup, API use, images, development, project context, and release history.
 
 <details>

@@ -6,6 +6,7 @@ from g2p_en import G2p
 from . import symbols
 
 from .english_utils.abbreviations import expand_abbreviations
+from .english_utils.normalization import normalize_english_tokens
 from .english_utils.time_norm import expand_time_english
 from .english_utils.number_norm import normalize_numbers
 from .japanese import distribute_phone
@@ -179,6 +180,7 @@ def refine_syllables(syllables):
 
 
 def text_normalize(text):
+    text = normalize_english_tokens(text)
     text = text.lower()
     text = expand_time_english(text)
     text = normalize_numbers(text)

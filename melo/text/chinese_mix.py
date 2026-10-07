@@ -5,6 +5,7 @@ from pypinyin import lazy_pinyin, Style
 
 # from text.symbols import punctuation
 from .chinese_numbers import normalize_chinese_numbers
+from .english_utils.normalization import normalize_english_tokens
 from .symbols import language_tone_start_map
 from .tone_sandhi import ToneSandhi
 from .english import g2p as g2p_en
@@ -187,6 +188,7 @@ def _g2p(segments):
 
 
 def text_normalize(text):
+    text = normalize_english_tokens(text)
     text = normalize_chinese_numbers(text)
     text = replace_punctuation(text)
     return text
