@@ -26,9 +26,9 @@ Main project links:
 
 ## Test locally
 
-Install FFmpeg if you run the Python service outside Docker and want to use pitch, tempo,
-volume, or loudness normalization. Neutral output controls do not invoke FFmpeg. The Docker
-images already include it.
+Install FFmpeg if you run the Python service outside Docker and want Ogg Vorbis, Opus, AAC,
+pitch, tempo, volume, or loudness normalization. Neutral output controls do not invoke the
+effects pass. The Docker images already include FFmpeg.
 
 ### Build image  
 You need docker to be working. (Example : Docker Desktop)  

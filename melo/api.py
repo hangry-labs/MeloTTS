@@ -1,16 +1,17 @@
 
 import re
 
-import soundfile
 import numpy as np
+import torch
 import torch.nn as nn
 from tqdm import tqdm
-import torch
 
 from . import utils
+from .audio import write_audio_file
+from .download_utils import load_or_download_config, load_or_download_model
 from .models import SynthesizerTrn
 from .split_utils import split_sentence
-from .download_utils import load_or_download_config, load_or_download_model
+
 
 class TTS(nn.Module):
     def __init__(self, 
@@ -22,8 +23,10 @@ class TTS(nn.Module):
         super().__init__()
         if device == 'auto':
             device = 'cpu'
-            if torch.cuda.is_available(): device = 'cuda'
-            if torch.backends.mps.is_available(): device = 'mps'
+            if torch.cuda.is_available():
+                device = 'cuda'
+            if torch.backends.mps.is_available():
+                device = 'mps'
         if 'cuda' in device:
             assert torch.cuda.is_available()
 
@@ -140,7 +143,9 @@ class TTS(nn.Module):
         if output_path is None:
             return audio
         else:
-            if format:
-                soundfile.write(output_path, audio, self.hps.data.sampling_rate, format=format)
-            else:
-                soundfile.write(output_path, audio, self.hps.data.sampling_rate)
+            write_audio_file(
+                output_path,
+                audio,
+                self.hps.data.sampling_rate,
+                output_format=format,
+            )

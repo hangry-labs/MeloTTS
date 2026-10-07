@@ -1,4 +1,5 @@
 import io
+import os
 import shutil
 import subprocess
 import threading
@@ -30,11 +31,12 @@ OUTPUT_FORMATS = {
         "label": "FLAC",
     },
     "ogg": {
-        "sf_format": "OGG",
-        "subtype": "VORBIS",
+        "sf_format": None,
+        "subtype": None,
         "media_type": "audio/ogg",
         "extension": "ogg",
         "label": "Ogg Vorbis",
+        "ffmpeg_args": ["-f", "ogg", "-codec:a", "libvorbis", "-q:a", "4"],
     },
     "opus": {
         "sf_format": None,
@@ -355,6 +357,30 @@ def encode_audio_bytes(audio, sample_rate, output_format):
     )
     encoded.seek(0)
     return encoded
+
+
+def write_audio_file(destination, audio, sample_rate, output_format=None):
+    """Write audio while isolating Ogg/Vorbis encoding from the Python process."""
+    explicit_format = str(output_format or "").strip().lower()
+    destination_suffix = ""
+    if isinstance(destination, (str, os.PathLike)):
+        destination_suffix = os.path.splitext(os.fspath(destination))[1].lower()
+    is_ogg = explicit_format in {"ogg", ".ogg", "oga", ".oga", "vorbis"} or (
+        not explicit_format and destination_suffix in {".ogg", ".oga"}
+    )
+    if not is_ogg:
+        if output_format:
+            return sf.write(destination, audio, sample_rate, format=output_format)
+        return sf.write(destination, audio, sample_rate)
+
+    encoded = encode_audio_bytes(audio, sample_rate, "ogg")
+    payload = encoded.getvalue()
+    if hasattr(destination, "write"):
+        destination.write(payload)
+        return None
+    with open(destination, "wb") as output_file:
+        output_file.write(payload)
+    return None
 
 
 def encode_pcm_s16le(audio):

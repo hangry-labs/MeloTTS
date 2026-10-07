@@ -16,6 +16,7 @@ from melo.audio import (
     encode_mp3_stream,
     get_supported_output_formats,
     trim_silent_audio_edges,
+    write_audio_file,
 )
 
 
@@ -126,17 +127,37 @@ class AudioEffectsTests(unittest.TestCase):
         self.assertEqual(decoded_rate, sample_rate)
         self.assertGreater(len(audio), sample_rate // 10)
 
-    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required for Opus and AAC")
+    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required for Ogg, Opus, and AAC")
     def test_ffmpeg_output_formats_are_available_and_encoded(self):
         audio = np.zeros(2205, dtype=np.float32)
         supported = get_supported_output_formats()
 
+        self.assertIn("ogg", supported)
         self.assertIn("opus", supported)
         self.assertIn("aac", supported)
+        ogg = encode_audio_bytes(audio, 22050, "ogg").getvalue()
         opus = encode_audio_bytes(audio, 22050, "opus").getvalue()
         aac = encode_audio_bytes(audio, 22050, "aac").getvalue()
+        self.assertTrue(ogg.startswith(b"OggS"))
         self.assertTrue(opus.startswith(b"OggS"))
         self.assertTrue(aac.startswith((b"\xff\xf1", b"\xff\xf9")))
+
+    @patch("melo.audio._run_ffmpeg", return_value=b"OggSisolated")
+    def test_ogg_file_output_uses_isolated_ffmpeg_encoder(self, run_ffmpeg):
+        destination = io.BytesIO()
+
+        write_audio_file(
+            destination,
+            np.zeros(2205, dtype=np.float32),
+            22050,
+            output_format="OGG",
+        )
+
+        self.assertEqual(destination.getvalue(), b"OggSisolated")
+        command = run_ffmpeg.call_args.args[0]
+        self.assertIn("libvorbis", command)
+        self.assertIn("ogg", command)
+        self.assertTrue(run_ffmpeg.call_args.args[1].startswith(b"RIFF"))
 
 
 if __name__ == "__main__":

@@ -137,7 +137,7 @@ The API defaults remain backward compatible: omitted controls are neutral, omitt
 
 MeloTTS does not expose a trained emotion label, style token, reference-audio prompt, or direct emotional-intensity input. The stochastic controls can vary delivery, and pitch/tempo can reshape the result, but the application does not mislabel those effects as native emotion control.
 
-Neutral output-control defaults skip the extra FFmpeg pass. For local non-Docker use, FFmpeg must be installed only when pitch, tempo, volume, or normalization is changed.
+Neutral output-control defaults skip the extra effects pass. For local non-Docker use, FFmpeg is required for Ogg Vorbis, Opus, AAC, and whenever pitch, tempo, volume, or normalization is changed. Docker images already include it.
 
 ### Experimental SSML Input
 
