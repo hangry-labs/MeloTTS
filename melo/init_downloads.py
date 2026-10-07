@@ -1,21 +1,21 @@
 import os
 import time
 
+from melo.model_registry import BERT_MODEL_REVISIONS
+from melo.optional_models import CORE_FULL_LANGUAGES, ENGLISH_LANGUAGES
 
 MAX_RETRIES = int(os.getenv("INIT_DOWNLOADS_MAX_RETRIES", "5"))
 RETRY_SLEEP_SECONDS = int(os.getenv("INIT_DOWNLOADS_RETRY_SLEEP", "5"))
 STRICT_MODE = os.getenv("INIT_DOWNLOADS_STRICT", "0") == "1"
 DOWNLOAD_PROFILE = os.getenv("INIT_DOWNLOADS_PROFILE", "FULL").strip().upper()
 
-FULL_LANGUAGES = ["EN", "EN_V2", "EN_NEWEST", "ES", "FR", "ZH", "JP", "KR"]
-EN_ONLY_LANGUAGES = ["EN", "EN_V2", "EN_NEWEST"]
+FULL_LANGUAGES = list(CORE_FULL_LANGUAGES)
+EN_ONLY_LANGUAGES = list(ENGLISH_LANGUAGES)
 
 FULL_BERT_MODELS = [
     "bert-base-uncased",  # English
     "bert-base-multilingual-uncased",  # Chinese + misc.
     "dbmdz/bert-base-french-europeana-cased",  # French
-    "dccuchile/bert-base-spanish-wwm-uncased",  # Spanish
-    "kykim/bert-kor-base",  # Korean
     "tohoku-nlp/bert-base-japanese-v3",  # Japanese
 ]
 EN_ONLY_BERT_MODELS = ["bert-base-uncased"]
@@ -82,10 +82,11 @@ def preload_tts_language(language, device):
 
 def preload_bert_model(model_id):
     def _load():
-        from transformers import AutoTokenizer, AutoModelForMaskedLM
+        from transformers import AutoModelForMaskedLM, AutoTokenizer
 
-        AutoTokenizer.from_pretrained(model_id)
-        AutoModelForMaskedLM.from_pretrained(model_id, from_tf=False)
+        revision = BERT_MODEL_REVISIONS[model_id]
+        AutoTokenizer.from_pretrained(model_id, revision=revision)
+        AutoModelForMaskedLM.from_pretrained(model_id, revision=revision, from_tf=False)
 
     return run_with_retries(f"BERT model {model_id}", _load)
 
@@ -111,8 +112,8 @@ def preload_nltk_resource(resource_path, download_name):
     return run_with_retries(f"NLTK resource {download_name}", _load)
 
 
-if __name__ == '__main__':
-    device = 'auto'
+if __name__ == "__main__":
+    device = "auto"
     languages, bert_models = resolve_preload_targets()
 
     print(f"[INFO] INIT_DOWNLOADS_PROFILE={DOWNLOAD_PROFILE}")

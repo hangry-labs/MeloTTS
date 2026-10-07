@@ -8,7 +8,8 @@ version = "1.0.0.dev0"
 description = "Easy-to-run, offline text-to-speech powered by MeloTTS"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-license = { file = "LICENSE" }
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "LICENSES/*.txt", "THIRD_PARTY_NOTICES.md"]
 authors = [
   { name = "MyShell.ai" },
   { name = "Hangry Labs" },
@@ -61,13 +62,16 @@ Homepage = "https://github.com/hangry-labs/MeloTTS"
 Documentation = "https://github.com/hangry-labs/MeloTTS#readme"
 Issues = "https://github.com/hangry-labs/MeloTTS/issues"
 Docker = "https://hub.docker.com/r/hangrylabs/melotts"
+Source = "https://github.com/hangry-labs/MeloTTS"
 
 [tool.hatch.build.targets.sdist]
 include = [
   "/assets",
   "/melo",
   "/LICENSE",
+  "/LICENSES",
   "/README.md",
+  "/THIRD_PARTY_NOTICES.md",
   "/VERSION",
 ]
 
@@ -77,6 +81,9 @@ packages = ["melo"]
 [tool.hatch.build.targets.wheel.force-include]
 assets = "assets"
 VERSION = "VERSION"
+LICENSE = "LICENSE"
+LICENSES = "LICENSES"
+"THIRD_PARTY_NOTICES.md" = "THIRD_PARTY_NOTICES.md"
 
 [tool.ruff]
 target-version = "py313"

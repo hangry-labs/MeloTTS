@@ -154,7 +154,7 @@ jobs:
             VCS_REF=${{ env.VCS_REF }}
             INIT_DOWNLOADS_PROFILE=FULL
             INIT_DOWNLOADS_STRICT=1
-            DEFAULT_TTS_LANGUAGES=EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR
+            DEFAULT_TTS_LANGUAGES=EN,EN_V2,EN_NEWEST,FR,ZH,JP
 
       - name: Report disk usage after full image
         shell: bash

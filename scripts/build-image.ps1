@@ -25,7 +25,7 @@ if ([string]::IsNullOrWhiteSpace($appVersion)) {
 }
 
 $languages = if ($Profile -eq "FULL") {
-    "EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR"
+    "EN,EN_V2,EN_NEWEST,FR,ZH,JP"
 } else {
     "EN,EN_V2,EN_NEWEST"
 }

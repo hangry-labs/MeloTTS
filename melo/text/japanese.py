@@ -5,7 +5,10 @@ import unicodedata
 
 from transformers import AutoTokenizer
 
+from melo.model_registry import bert_revision_kwargs
+
 from . import symbols
+
 punctuation = ["!", "?", "…", ",", ".", "'", "-"]
 
 try:
@@ -537,6 +540,7 @@ def replace_punctuation(text):
     return replaced_text
 
 from pykakasi import kakasi
+
 # Initialize kakasi object
 kakasi = kakasi()
 # Set options for converting Chinese characters to Katakana
@@ -567,7 +571,7 @@ def distribute_phone(n_phone, n_word):
 # tokenizer = AutoTokenizer.from_pretrained('cl-tohoku/bert-base-japanese-v3')
 
 model_id = 'tohoku-nlp/bert-base-japanese-v3'
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
 def g2p(norm_text):
 
     tokenized = tokenizer.tokenize(norm_text)

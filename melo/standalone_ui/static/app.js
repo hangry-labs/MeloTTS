@@ -38,6 +38,7 @@ const state = {
   inputType: 'text',
   plainTextDraft: '',
   ssmlDraft: '',
+  pendingOptionalPack: null,
 }
 
 const generateOutput = new AudioEditor($('#generate-output'), { label: t('editor.generatedAudio') })
@@ -685,10 +686,146 @@ function renderModelResidency(status) {
   })
 }
 
+function optionalPackStatus(pack) {
+  if (pack.enabled && !pack.installed) return 'Disabled because persistent files are missing'
+  if (pack.enabled) return 'Enabled and stored persistently'
+  if (pack.installed) return 'Downloaded and ready to enable offline'
+  return 'Not downloaded - internet required once'
+}
+
+async function disableOptionalPack(pack, checkbox) {
+  checkbox.disabled = true
+  try {
+    await fetchJson(`/system/models/${encodeURIComponent(pack.language)}`, {
+      method: 'DELETE',
+    })
+    await refreshSystem()
+    await loadWorkspace(false)
+    showToast(`${pack.name} disabled; downloaded files were kept`, 'success')
+  } catch (error) {
+    checkbox.checked = true
+    showToast(errorMessage(error))
+  } finally {
+    checkbox.disabled = false
+  }
+}
+
+async function enableInstalledOptionalPack(pack, checkbox) {
+  checkbox.disabled = true
+  try {
+    await fetchJson(`/system/models/${encodeURIComponent(pack.language)}/install`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accept_upstream_terms: true }),
+    })
+    await refreshSystem()
+    await loadWorkspace(false)
+    showToast(`${pack.name} enabled from persistent storage`, 'success')
+  } catch (error) {
+    checkbox.checked = false
+    showToast(errorMessage(error))
+  } finally {
+    checkbox.disabled = false
+  }
+}
+
+function openOptionalPackDialog(pack) {
+  state.pendingOptionalPack = pack
+  $('#optional-model-dialog-title').textContent = `Enable ${pack.name}`
+  $('#optional-model-warning').textContent = pack.warning
+  $('#optional-model-terms').href = pack.terms_url
+  $('#optional-model-dialog').showModal()
+}
+
+function renderOptionalPacks(payload) {
+  const container = $('#optional-model-groups')
+  container.replaceChildren()
+  ;(payload.optional_language_packs || []).forEach((pack) => {
+    const section = document.createElement('section')
+    section.className = 'model-setting optional-model-choice'
+    const copy = document.createElement('span')
+    copy.className = 'model-setting-copy'
+    const name = document.createElement('strong')
+    name.textContent = `${pack.name} (${pack.language})`
+    const status = document.createElement('span')
+    status.className = 'optional-model-status'
+    status.dataset.ready = String(pack.installed)
+    status.textContent = optionalPackStatus(pack)
+    const terms = document.createElement('a')
+    terms.className = 'optional-model-terms'
+    terms.href = pack.terms_url
+    terms.target = '_blank'
+    terms.rel = 'noreferrer'
+    terms.textContent = 'Upstream terms'
+    copy.append(name, status, terms)
+    const toggle = document.createElement('label')
+    toggle.className = 'toggle-field'
+    toggle.setAttribute('aria-label', `Enable ${pack.name}`)
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    checkbox.checked = pack.enabled
+    const track = document.createElement('span')
+    track.className = 'toggle-track'
+    track.setAttribute('aria-hidden', 'true')
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        if (pack.installed) {
+          enableInstalledOptionalPack(pack, checkbox)
+        } else {
+          checkbox.checked = false
+          openOptionalPackDialog(pack)
+        }
+      } else {
+        disableOptionalPack(pack, checkbox)
+      }
+    })
+    toggle.append(checkbox, track)
+    section.append(copy, toggle)
+    container.append(section)
+  })
+}
+
+function closeOptionalPackDialog() {
+  state.pendingOptionalPack = null
+  $('#optional-model-dialog').close()
+}
+
+$('#optional-model-close').addEventListener('click', closeOptionalPackDialog)
+$('#optional-model-cancel').addEventListener('click', closeOptionalPackDialog)
+$('#optional-model-dialog').addEventListener('cancel', () => { state.pendingOptionalPack = null })
+$('#optional-model-install').addEventListener('click', async () => {
+  const pack = state.pendingOptionalPack
+  if (!pack) return
+  const button = $('#optional-model-install')
+  button.disabled = true
+  button.querySelector('span').textContent = pack.installed ? 'Enabling...' : 'Downloading...'
+  try {
+    await fetchJson(`/system/models/${encodeURIComponent(pack.language)}/install`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accept_upstream_terms: true }),
+    })
+    closeOptionalPackDialog()
+    await refreshSystem()
+    await loadWorkspace(false)
+    showToast(`${pack.name} enabled`, 'success')
+  } catch (error) {
+    showToast(errorMessage(error))
+  } finally {
+    button.disabled = false
+    button.querySelector('span').textContent = 'Accept, download, and enable'
+  }
+})
+
 async function refreshSystem() {
   try {
-    const [status, voices] = await Promise.all([fetchJson('/tts/status'), fetchJson('/tts/voices')])
+    const [status, voices, modelSettings] = await Promise.all([
+      fetchJson('/tts/status'),
+      fetchJson('/tts/voices'),
+      fetchJson('/system/settings/models'),
+    ])
     state.status = status
+    renderOptionalPacks(modelSettings)
     renderModelResidency(status)
     renderJsonTree($('#runtime-output'), status, 1)
     renderJsonTree($('#voices-output'), voices, 1)

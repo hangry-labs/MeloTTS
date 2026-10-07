@@ -1,7 +1,9 @@
-import torch
-from transformers import AutoTokenizer, AutoModelForMaskedLM
 import sys
 
+import torch
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
 
 models = {}
 tokenizers = {}
@@ -18,11 +20,13 @@ def get_bert_feature(text, word2ph, device=None, model_id='tohoku-nlp/bert-base-
     if not device:
         device = "cuda"
     if model_id not in models:
-        model = AutoModelForMaskedLM.from_pretrained(model_id).to(
+        model = AutoModelForMaskedLM.from_pretrained(
+            model_id, **bert_revision_kwargs(model_id)
+        ).to(
             device
         )
         models[model_id] = model
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
         tokenizers[model_id] = tokenizer
     else:
         model = models[model_id]

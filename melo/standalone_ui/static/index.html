@@ -37,7 +37,7 @@
         <a class="primary-link" href="https://hangry-labs.github.io/MeloTTS/examples/" target="_blank" rel="noreferrer"><i class="icon-sparkles"></i><span>Examples</span></a>
         <a href="/tts/docs"><i class="icon-book-open"></i><span>API docs</span></a>
         <a href="/tts/voices"><i class="icon-audio-lines"></i><span>Voices</span></a>
-        <a href="https://github.com/hangry-labs/MeloTTS" target="_blank" rel="noreferrer"><i class="icon-git-branch"></i><span>GitHub</span></a>
+        <a href="https://github.com/hangry-labs/MeloTTS" target="_blank" rel="noreferrer" title="AGPL source code and license"><i class="icon-git-branch"></i><span>Source</span></a>
         <label class="locale-picker"><span class="visually-hidden">Interface language</span><select id="ui-locale" aria-label="Interface language"></select></label>
       </div>
     </nav>
@@ -133,7 +133,10 @@
         <div class="system-grid">
           <div class="system-info-stack">
             <section class="deployment-settings" aria-labelledby="served-models-title">
-              <div class="settings-toolbar"><div><div class="section-title" id="served-models-title"><i class="icon-audio-lines"></i><span>Language models</span></div><p>Load a configured model or keep only one model resident to reclaim memory.</p></div></div>
+              <div class="settings-toolbar"><div><div class="section-title" id="served-models-title"><i class="icon-audio-lines"></i><span>Language models</span></div><p>Core languages work offline. Optional Spanish and Korean packs require one acknowledged online download and remain in the persistent Docker volume for future releases.</p></div></div>
+              <div class="optional-model-heading">Optional online packs</div>
+              <div class="model-settings-groups optional-model-groups" id="optional-model-groups" aria-live="polite"></div>
+              <div class="optional-model-heading">Model residency</div>
               <div class="model-settings-groups" id="model-settings-groups" aria-live="polite"></div>
             </section>
             <section class="runtime-system-panel"><div class="section-title"><i class="icon-activity"></i><span>Runtime</span></div><div class="data-output json-output" id="runtime-output"></div></section>
@@ -169,6 +172,20 @@
       <div><code>&lt;say-as interpret-as="ordinal"&gt;3&lt;/say-as&gt;</code><span>Read an English ordinal. This is limited to English models.</span></div>
     </div>
     <p class="ssml-dialog-note">Prosody ranges are speed and tempo 0.5-2, pitch -12st to +12st, and volume 0-2. Nested values compose with request controls and must remain in range. Complete-file normalization remains request-wide. One speak root is required. Documents are limited to 50,000 characters, 256 elements, and eight nesting levels. Breaks are limited to 10 seconds each and 30 seconds total. Unsupported markup, unsafe XML, and direct phoneme input are rejected.</p>
+  </dialog>
+
+  <dialog class="ssml-dialog optional-model-dialog" id="optional-model-dialog" aria-labelledby="optional-model-dialog-title">
+    <div class="ssml-dialog-heading">
+      <div><span>Optional online download</span><h2 id="optional-model-dialog-title">Enable language pack</h2></div>
+      <button class="icon-button bordered" id="optional-model-close" type="button" aria-label="Close optional model warning" title="Close"><i class="icon-x"></i></button>
+    </div>
+    <p id="optional-model-warning"></p>
+    <p>The first download requires an internet connection. Model files are stored under <code>/app/persistent</code>; mount the documented Docker volume to keep them across container and image upgrades.</p>
+    <p><a id="optional-model-terms" href="#" target="_blank" rel="noreferrer">Review upstream model terms</a></p>
+    <div class="dialog-actions">
+      <button class="secondary-button" id="optional-model-cancel" type="button">Cancel</button>
+      <button class="primary-button" id="optional-model-install" type="button"><i class="icon-download"></i><span>Accept, download, and enable</span></button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast" role="alert" hidden></div>

@@ -1,6 +1,9 @@
+from transformers import AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
+
 from .fr_phonemizer import cleaner as fr_cleaner
 from .fr_phonemizer import fr_to_ipa
-from transformers import AutoTokenizer
 
 
 def distribute_phone(n_phone, n_word):
@@ -16,7 +19,7 @@ def text_normalize(text):
     return text
 
 model_id = 'dbmdz/bert-base-french-europeana-cased'
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
 
 def g2p(text, pad_start_end=True, tokenized=None):
     if tokenized is None:
@@ -70,8 +73,8 @@ if __name__ == "__main__":
     print(phoneme)
 
     
-    from TTS.tts.utils.text.phonemizers.multi_phonemizer import MultiPhonemizer
     from text.cleaner_multiling import unicleaners
+    from TTS.tts.utils.text.phonemizers.multi_phonemizer import MultiPhonemizer
 
     def text_normalize(text):
         text = unicleaners(text, cased=True, lang='fr')

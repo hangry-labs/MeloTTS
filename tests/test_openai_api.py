@@ -48,6 +48,9 @@ class FakeModel:
 class OpenAICompatibilityApiTests(unittest.TestCase):
     def setUp(self):
         self.previous_models = dict(app_module.models)
+        self.previous_languages = list(app_module.LANGUAGES)
+        if "ES" not in app_module.LANGUAGES:
+            app_module.LANGUAGES.append("ES")
         app_module.models.clear()
         app_module.models.update(
             {
@@ -63,6 +66,7 @@ class OpenAICompatibilityApiTests(unittest.TestCase):
         self.client.close()
         app_module.models.clear()
         app_module.models.update(self.previous_models)
+        app_module.LANGUAGES[:] = self.previous_languages
 
     def test_health_routes_report_ready(self):
         for path in ("/health", "/health/live", "/health/ready"):

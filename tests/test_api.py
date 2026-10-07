@@ -1,8 +1,10 @@
 import io
 import os
 import sys
+import tempfile
 import types
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -75,8 +77,59 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["version"], app_module.VERSION)
+        self.assertEqual(payload["license"], "AGPL-3.0-only")
+        self.assertEqual(payload["source_code"], app_module.SOURCE_CODE_URL)
         self.assertIn("EN", payload["configured_languages"])
         self.assertEqual(payload["loaded_languages"], ["EN"])
+        self.assertEqual(response.headers["x-melotts-source"], app_module.SOURCE_CODE_URL)
+        self.assertIn('rel="source"', response.headers["link"])
+
+    def test_source_offer_reports_corresponding_source(self):
+        response = self.client.get("/source")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], "AGPL-3.0-only")
+        self.assertEqual(response.json()["source_code"], app_module.SOURCE_CODE_URL)
+        self.assertIn("THIRD_PARTY_NOTICES.md", response.json()["third_party_notices"])
+
+    def test_optional_pack_requires_consent_and_persists_operator_choice(self):
+        previous_languages = list(app_module.LANGUAGES)
+        previous_path = app_module.RUNTIME_SETTINGS.path
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                app_module.RUNTIME_SETTINGS.path = Path(directory) / "settings.json"
+                rejected = self.client.post(
+                    "/system/models/ES/install",
+                    json={"accept_upstream_terms": False},
+                )
+                with (
+                    patch("melo.app.install_optional_pack") as install_pack,
+                    patch("melo.app.TTS", return_value=FakeModel()),
+                ):
+                    installed = self.client.post(
+                        "/system/models/ES/install",
+                        json={"accept_upstream_terms": True},
+                    )
+                disabled = self.client.delete("/system/models/ES")
+
+                self.assertEqual(rejected.status_code, 400)
+                self.assertEqual(installed.status_code, 200)
+                install_pack.assert_called_once_with("ES")
+                self.assertEqual(
+                    installed.json()["optional_language_packs"][0]["language"], "ES"
+                )
+                self.assertTrue(installed.json()["optional_language_packs"][0]["enabled"])
+                self.assertFalse(disabled.json()["optional_language_packs"][0]["enabled"])
+                self.assertEqual(
+                    app_module.RUNTIME_SETTINGS.optional_languages(
+                        app_module.OPTIONAL_LANGUAGE_CODES
+                    ),
+                    [],
+                )
+        finally:
+            app_module.RUNTIME_SETTINGS.path = previous_path
+            app_module.LANGUAGES[:] = previous_languages
+            app_module.models.pop("ES", None)
 
     def test_generate_defaults_to_backward_compatible_wav(self):
         secret = self.request_body()["text"]
@@ -201,7 +254,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(unsafe.status_code, 400)
         self.assertIn("Invalid or unsafe SSML", unsafe.json()["detail"])
         self.assertEqual(mismatch.status_code, 400)
-        self.assertIn("SSML language model 'ES' is not loaded", mismatch.json()["detail"])
+        self.assertIn("Unsupported or unavailable SSML language 'es-ES'", mismatch.json()["detail"])
 
     def test_ssml_stream_uses_the_shared_plan(self):
         response = self.client.post(

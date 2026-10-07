@@ -1,17 +1,18 @@
-import pickle
 import os
+import pickle
 import re
+
 from g2p_en import G2p
+from transformers import AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
 
 from . import symbols
-
 from .english_utils.abbreviations import expand_abbreviations
 from .english_utils.normalization import normalize_english_tokens
-from .english_utils.time_norm import expand_time_english
 from .english_utils.number_norm import normalize_numbers
+from .english_utils.time_norm import expand_time_english
 from .japanese import distribute_phone
-
-from transformers import AutoTokenizer
 
 current_file_path = os.path.dirname(__file__)
 CMU_DICT_PATH = os.path.join(current_file_path, "cmudict.rep")
@@ -188,7 +189,7 @@ def text_normalize(text):
     return text
 
 model_id = 'bert-base-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
 def g2p_old(text):
     phones = []
     tones = []

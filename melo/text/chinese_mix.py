@@ -1,15 +1,17 @@
 import os
 import re
 
-from pypinyin import lazy_pinyin, Style
+from pypinyin import Style, lazy_pinyin
+from transformers import AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
 
 # from text.symbols import punctuation
 from .chinese_numbers import normalize_chinese_numbers
+from .english import g2p as g2p_en
 from .english_utils.normalization import normalize_english_tokens
 from .symbols import language_tone_start_map
 from .tone_sandhi import ToneSandhi
-from .english import g2p as g2p_en
-from transformers import AutoTokenizer
 
 punctuation = ["!", "?", "…", ",", ".", "'", "-"]
 current_file_path = os.path.dirname(__file__)
@@ -19,7 +21,6 @@ pinyin_to_symbol_map = {
 }
 
 import jieba.posseg as psg
-
 
 rep_map = {
     "：": ",",
@@ -98,7 +99,7 @@ def _get_initials_finals(word):
     return initials, finals
 
 model_id = 'bert-base-multilingual-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
 def _g2p(segments):
     phones_list = []
     tones_list = []
@@ -199,6 +200,8 @@ def get_bert_feature(text, word2ph, device):
     return chinese_bert.get_bert_feature(text, word2ph, model_id='bert-base-multilingual-uncased', device=device)
 
 from .chinese import _g2p as _chinese_g2p
+
+
 def _g2p_v2(segments):
     spliter = '#$&^!@'
 

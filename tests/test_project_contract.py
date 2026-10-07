@@ -21,7 +21,52 @@ class ProjectContractTests(unittest.TestCase):
 
         self.assertEqual(force_include["assets"], "assets")
         self.assertEqual(force_include["VERSION"], "VERSION")
+        self.assertEqual(force_include["LICENSE"], "LICENSE")
+        self.assertEqual(force_include["LICENSES"], "LICENSES")
+        self.assertEqual(
+            force_include["THIRD_PARTY_NOTICES.md"], "THIRD_PARTY_NOTICES.md"
+        )
         self.assertFalse((REPO_ROOT / "setup.py").exists())
+
+    def test_license_and_notices_are_declared(self):
+        project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        license_text = (REPO_ROOT / "LICENSE").read_text(encoding="utf-8")
+        notices = (REPO_ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+
+        self.assertEqual(project["project"]["license"], "AGPL-3.0-only")
+        self.assertIn("GNU AFFERO GENERAL PUBLIC LICENSE", license_text)
+        self.assertIn("Bert-VITS2", notices)
+        self.assertIn("Copyright (c) 2024 MyShell.ai", notices)
+        self.assertTrue((REPO_ROOT / "LICENSES" / "MIT-MeloTTS.txt").is_file())
+        self.assertTrue((REPO_ROOT / "LICENSES" / "Apache-2.0.txt").is_file())
+
+    def test_model_downloads_are_pinned_to_reviewed_revisions(self):
+        from melo.model_registry import BERT_MODEL_REVISIONS, TTS_MODEL_REVISIONS
+
+        self.assertEqual(
+            set(TTS_MODEL_REVISIONS),
+            {"EN", "EN_V2", "EN_NEWEST", "ES", "FR", "ZH", "JP", "KR"},
+        )
+        for revision in [*TTS_MODEL_REVISIONS.values(), *BERT_MODEL_REVISIONS.values()]:
+            self.assertRegex(revision, r"^[0-9a-f]{40}$")
+
+    def test_optional_spanish_and_korean_models_are_not_baked(self):
+        from melo.init_downloads import FULL_BERT_MODELS, FULL_LANGUAGES
+        from melo.optional_models import OPTIONAL_LANGUAGE_CODES
+
+        self.assertTrue(set(OPTIONAL_LANGUAGE_CODES).isdisjoint(FULL_LANGUAGES))
+        self.assertNotIn("dccuchile/bert-base-spanish-wwm-uncased", FULL_BERT_MODELS)
+        self.assertNotIn("kykim/bert-kor-base", FULL_BERT_MODELS)
+
+        dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
+        taskfile = (REPO_ROOT / "Taskfile.yml").read_text(encoding="utf-8")
+        self.assertIn("HF_HOME=/app/persistent/models/huggingface", dockerfile)
+        self.assertIn('DEFAULT_TTS_LANGUAGES="EN,EN_V2,EN_NEWEST,FR,ZH,JP"', dockerfile)
+        self.assertIn(
+            "melo/api.py melo/attentions.py melo/audio.py melo/commons.py", dockerfile
+        )
+        self.assertIn("melotts_data", taskfile)
+        self.assertIn(":/app/persistent", taskfile)
 
     def test_repository_assets_are_webp_only(self):
         assets = [path for path in (REPO_ROOT / "assets").iterdir() if path.is_file()]

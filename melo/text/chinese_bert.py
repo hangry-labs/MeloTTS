@@ -1,7 +1,9 @@
-import torch
 import sys
-from transformers import AutoTokenizer, AutoModelForMaskedLM
 
+import torch
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
 
 # model_id = 'hfl/chinese-roberta-wwm-ext-large'
 local_path = "./bert/chinese-roberta-wwm-ext-large"
@@ -13,9 +15,11 @@ models = {}
 def get_bert_feature(text, word2ph, device=None, model_id='hfl/chinese-roberta-wwm-ext-large'):
     if model_id not in models:
         models[model_id] = AutoModelForMaskedLM.from_pretrained(
-            model_id
+            model_id, **bert_revision_kwargs(model_id)
         ).to(device)
-        tokenizers[model_id] = AutoTokenizer.from_pretrained(model_id)
+        tokenizers[model_id] = AutoTokenizer.from_pretrained(
+            model_id, **bert_revision_kwargs(model_id)
+        )
     model = models[model_id]
     tokenizer = tokenizers[model_id]
 

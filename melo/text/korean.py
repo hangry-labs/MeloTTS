@@ -2,13 +2,14 @@
 # compatible with Julius https://github.com/julius-speech/segmentation-kit
 import re
 
+from jamo import hangul_to_jamo
 from transformers import AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
+from melo.text.ko_dictionary import english_dictionary, etc_dictionary
 
 from . import punctuation, symbols
 
-
-from melo.text.ko_dictionary import english_dictionary, etc_dictionary
-from jamo import hangul_to_jamo
 
 def normalize(text):
     text = text.strip()
@@ -89,7 +90,7 @@ def distribute_phone(n_phone, n_word):
 # tokenizer = AutoTokenizer.from_pretrained('cl-tohoku/bert-base-japanese-v3')
 
 model_id = 'kykim/bert-kor-base'
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
 
 def g2p(norm_text):
     tokenized = tokenizer.tokenize(norm_text)

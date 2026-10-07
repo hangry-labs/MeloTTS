@@ -293,6 +293,8 @@ pre { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .settings-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 .settings-actions .secondary-button { min-height: 34px; padding: 0 12px; }
 .model-settings-groups { display: grid; gap: 0; margin-top: 14px; border-top: 1px solid var(--line); }
+.optional-model-heading { margin-top: 18px; color: #e4c9b5; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+.optional-model-groups { margin-top: 8px; }
 .model-setting { min-width: 0; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .model-setting-choice { display: flex; align-items: flex-start; gap: 11px; color: #d8d9dd; cursor: pointer; }
 .model-setting-choice input { width: 16px; min-height: 16px; margin-top: 2px; padding: 0; accent-color: var(--accent); }
@@ -303,6 +305,15 @@ pre { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .model-residency-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .model-residency-actions { display: flex; flex: 0 0 auto; gap: 8px; }
 .model-action { width: auto; min-height: 34px; margin: 0; padding: 0 12px; }
+.optional-model-choice { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.optional-model-choice .toggle-field { min-width: 52px; padding: 0; flex: 0 0 auto; }
+.optional-model-status { color: #d4a47f !important; }
+.optional-model-status[data-ready="true"] { color: #8fd2ad !important; }
+.optional-model-terms { width: max-content; color: #f0a15f; font-size: 0.68rem; }
+.optional-model-dialog code { color: #f0a15f; }
+.optional-model-dialog a { color: #f0a15f; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.dialog-actions button { width: auto; margin: 0; }
 .model-voices { margin: 10px 0 0 27px; color: var(--muted); font-size: 0.68rem; }
 .model-voices summary { width: max-content; cursor: pointer; }
 .model-voices div { margin-top: 7px; line-height: 1.55; overflow-wrap: anywhere; }

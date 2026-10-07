@@ -9,6 +9,36 @@ Main project links:
 - GitHub Container Registry: https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts
 - Hangry Labs: https://hangrylabs.app/
 
+## Before forking any project
+
+Do this before writing code or publishing an image. A famous or well-maintained
+upstream can still contain material that its top-level license does not cover.
+
+1. Read the root `LICENSE`, `COPYING`, and `NOTICE` files.
+2. Search source headers and documentation for copied or derived projects:
+
+   ```powershell
+   rg -n "Copyright|License|licensed|derived from|based on|from https" .
+   ```
+
+3. Check the license of the original source for every substantial copied file.
+   Use Git history to confirm which license applied when the code was copied.
+4. Review model weights, tokenizers, dictionaries, datasets, fonts, JavaScript,
+   and artwork separately. A code license does not automatically license models
+   or training data.
+5. Check direct and transitive runtime dependencies. Installed Python packages
+   normally keep their notices in `<package>.dist-info/licenses`.
+6. Record findings in a committed third-party notice before publishing.
+7. Pin reviewed model revisions so a later upstream change cannot silently alter
+   either the artifact or its terms.
+8. Re-run the review whenever a dependency, model revision, or copied component
+   changes.
+
+For Melo TTS, the combined application is `AGPL-3.0-only`; inherited and model
+terms are recorded in `THIRD_PARTY_NOTICES.md`. AGPL permits private and commercial
+use. Modified versions distributed to others require corresponding source, and a
+modified network service must prominently offer that source to its users.
+
 ##Tools
 
     winget install --id=astral-sh.uv -e
@@ -19,10 +49,10 @@ Main project links:
 
 ## Docker Usage
 ### CPU Version
-`docker run -p 8888:8888 hangrylabs/melotts`
+`docker run -p 8888:8888 -v melotts_data:/app/persistent hangrylabs/melotts`
 
 ### GPU Version
-`docker run --gpus all -p 8888:8888 hangrylabs/melotts`
+`docker run --gpus all -p 8888:8888 -v melotts_data:/app/persistent hangrylabs/melotts`
 
 ## Test locally
 
@@ -37,10 +67,10 @@ You need docker to be working. (Example : Docker Desktop)
 Local task builds first check the LAN UniDic mirror at `http://192.168.0.54:5080`. If it is unavailable, the build automatically uses the checksum-verified public source. A plain `docker build -t melotts:test .` always uses the portable public default. GitHub Actions stores the same verified archive in its own build cache.
 
 ### Run image  
-`docker run -p 8888:8888 --gpus all melotts:test`
+`docker run -p 8888:8888 --gpus all -v melotts_data:/app/persistent melotts:test`
 
 ### Run image - offline mode
-`docker run -p 8888:8888 -it --rm --gpus all --add-host=cdn-lfs.huggingface.co:127.0.0.1 --add-host=hf.co:127.0.0.1 --add-host=huggingface.co:127.0.0.1 --add-host=s3.amazonaws.com:127.0.0.1 --add-host=raw.githubusercontent.com:127.0.0.1 --add-host=git-lfs.github.com:127.0.0.1 --add-host=objects.githubusercontent.com:127.0.0.1 melotts:test`
+`docker run -p 8888:8888 -it --rm --gpus all --network none -v melotts_data:/app/persistent melotts:test`
 
 ### Run image - english only
 `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN melotts:test`
@@ -59,7 +89,18 @@ task localdev
 task localapi
 ```
 
-These mount `melo/`, `assets/`, and `VERSION` into the container so most UI/API changes do not require a Docker rebuild. The normal tasks enable all language models; use `task localrunsmall` for the three English model families only.
+These mount `melo/`, `assets`, and `VERSION` into the container so most UI/API changes do not require a Docker rebuild. Both also mount `melotts_data` at `/app/persistent`. Normal tasks load the six baked core model families; use `task localrunsmall` for the three English model families only.
+
+### Enable Spanish or Korean once, then keep it offline
+
+1. Start Melo TTS with the `melotts_data` volume mounted.
+2. Open `http://localhost:8888`, select **System**, and find **Optional online packs**.
+3. Switch on Spanish or Korean, read the warning, open the upstream terms, then choose **Accept, download, and enable**.
+4. Keep using the same `-v melotts_data:/app/persistent` option for later image versions.
+
+The first activation needs internet. Later starts can use `--network none` because
+the downloaded checkpoint, encoder, acceptance marker, and enabled setting are in
+the volume. Turning a pack off releases it from memory but does not delete it.
 
 ### Check API - ping
 ```bash

@@ -8,7 +8,15 @@
 
 Easy-to-run, offline-friendly multilingual text to speech with a complete browser workspace and HTTP API in one Docker image.
 
-This Hangry Labs fork turns the original MeloTTS research project into a practical application for home users, developers, and production evaluation. The full image contains every supported language model; the smaller English-family image contains the three English model generations. Once downloaded, either image can run without live model downloads.
+This Hangry Labs fork turns the original MeloTTS research project into a practical application for home users, developers, and production evaluation. The standard image includes English, French, Chinese, and Japanese model families for immediate offline use; the smaller English-family image contains the three English model generations. Spanish and Korean are optional one-time online downloads because their encoder terms require individual review.
+
+> **Yes, you can use it.** Melo TTS is free software under AGPL-3.0. You may run
+> it at home or at work, use it commercially, keep an image offline, call its API
+> from a separately licensed application, and use the generated audio. If you
+> distribute a modified Melo TTS or let users interact with your modified Melo
+> service over a network, you must offer those users the complete corresponding
+> source under AGPL-3.0. Model, voice, input, and third-party rights remain subject
+> to their own terms; see [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 
 Official images are published on [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GitHub Container Registry](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
 
@@ -68,10 +76,12 @@ Featured samples: [British English](examples/melotts-en-br.mp3), [newest English
 Run the complete multilingual image with NVIDIA GPU acceleration:
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:latest
+docker run --rm -p 8888:8888 --gpus all \
+  -v melotts_data:/app/persistent \
+  hangrylabs/melotts:latest
 ```
 
-Use `hangrylabs/melotts:latest_en` for the smaller image containing `EN`, `EN_V2`, and `EN_NEWEST`. Omit `--gpus all` to run on CPU, or use `--gpus "device=1"` to select a specific GPU.
+Use `hangrylabs/melotts:latest_en` for the smaller image containing `EN`, `EN_V2`, and `EN_NEWEST`. Omit `--gpus all` to run on CPU, or use `--gpus "device=1"` to select a specific GPU. Keep the `melotts_data` volume mounted so optional downloads and settings survive container and image replacement.
 
 Then open [http://localhost:8888](http://localhost:8888). The UI and API are served together; interactive OpenAPI documentation is available at [http://localhost:8888/tts/docs](http://localhost:8888/tts/docs).
 
@@ -80,8 +90,8 @@ Then open [http://localhost:8888](http://localhost:8888). The UI and API are ser
 Pin a release tag for repeatable deployments. Full images use `<version>` and English-family images use `<version>_en`:
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:v0.1.0
-docker run --rm -p 8888:8888 --gpus all hangrylabs/melotts:v0.1.0_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0_en
 ```
 
 ---
@@ -166,6 +176,8 @@ One document is limited to 50,000 characters, 256 elements, eight nesting levels
 
 The browser workspace exposes the same explicit orange SSML mode and an in-app rules guide. The [SSML dialogue examples](https://hangry-labs.github.io/MeloTTS/examples/ssml.html) include the exact scripts and generated MP3 files for multi-accent, multilingual, and directed-delivery demonstrations. Voice names and deployment state can be inspected through `GET /tts/voices`.
 
+SSML that selects Spanish or Korean requires that language pack to be enabled first in the System tab.
+
 ### Streaming
 
 ```bash
@@ -181,6 +193,8 @@ Streaming is sentence-level because the model emits complete sentence segments r
 
 | Endpoint | Purpose |
 | --- | --- |
+| `GET /source` | License, exact corresponding-source location, and third-party notices. |
+| `GET /system/settings/models` | Baked core languages plus optional pack download, cache, and enabled state. |
 | `GET /tts/status` | Version, build, runtime, languages, controls, and formats. |
 | `GET /tts/defaults` | UI texts, presets, neutral output controls, and capability metadata. |
 | `GET /tts/languages` | Configured and loaded language models. |
@@ -191,6 +205,8 @@ Streaming is sentence-level because the model emits complete sentence segments r
 | `POST /tts/metrics` | Plain-text sentence metrics or validated SSML plan metrics. |
 | `POST /tts/load` | Load a configured model on demand. |
 | `POST /tts/purge` | Keep one loaded model and release the others. |
+| `POST /system/models/{language}/install` | Explicitly accept upstream terms, download, persist, and enable optional `ES` or `KR`. |
+| `DELETE /system/models/{language}` | Disable and unload an optional pack while retaining its persistent files. |
 
 The running service is the source of truth for exact schemas: open `/tts/docs` or inspect `/tts/openapi.json`.
 
@@ -202,7 +218,7 @@ The running service is the source of truth for exact schemas: open `/tts/docs` o
 
 This independently maintained Hangry Labs fork focuses on simple deployment, offline operation, a complete browser UI, and application-friendly APIs. It is based on the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by Wenliang Zhao, Xumin Yu, and Zengyi Qin.
 
-The original project and this fork are MIT licensed. Original attribution is preserved in [`LICENSE`](LICENSE); Hangry Labs copyright covers the Docker packaging, browser application, API integration, documentation, release tooling, and other fork-specific work.
+The combined application is licensed under AGPL-3.0 because its inherited implementation includes AGPL-covered Bert-VITS2-derived material. The original MyShell.ai MIT grant, source provenance, model terms, and bundled-component notices remain preserved in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 
 This project is maintained for usability and convenience by a small team. Evaluate security, capacity, observability, and availability requirements before critical production deployment.
 
@@ -223,10 +239,12 @@ Images are published to [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts
 
 | Variant | Current tag | Release tag | Included models |
 | --- | --- | --- | --- |
-| Full | `latest` | `<version>` | `EN`, `EN_V2`, `EN_NEWEST`, `ES`, `FR`, `ZH`, `JP`, `KR` |
+| Standard | `latest` | `<version>` | Baked: `EN`, `EN_V2`, `EN_NEWEST`, `FR`, `ZH`, `JP`; optional: `ES`, `KR` |
 | English family | `latest_en` | `<version>_en` | `EN`, `EN_V2`, `EN_NEWEST` |
 
-Both variants include the browser UI and HTTP API, pinned Python dependencies, audio tooling, and baked model assets. After the initial pull they can run without Hugging Face access. Set `TTS_LANGUAGES` to limit which baked models are loaded at startup.
+Both variants include the browser UI and HTTP API, pinned Python dependencies, audio tooling, and their listed baked model assets. Baked languages run without Hugging Face access. Set `TTS_LANGUAGES` to limit which baked core models load at startup.
+
+Spanish and Korean remain supported but are not distributed in either image. Open System, review the warning and upstream terms, and enable the desired pack while online. Melo downloads the pinned voice checkpoint and encoder directly into `/app/persistent`; after that, the pack works offline and remains available to future image releases using the same `melotts_data` volume. Disabling a pack unloads it without deleting its files. See [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 
 </details>
 
@@ -255,6 +273,8 @@ task localdev
 ## Version History
 
 ### v1.0.0 (in development)
+- Corrected the combined project license to AGPL-3.0-only, preserved inherited notices, added network-visible source offers, documented model-specific terms, and pinned audited model revisions.
+- Removed Spanish BETO and Korean `kykim` artifacts from published images; both languages now use explicit terms-aware online installation into a persistent Docker volume and work offline after that first download.
 - Added a strict OpenAI-compatible API with model and voice discovery, optional bearer authentication, OpenAI-shaped errors, MP3 defaults, the full `0.25`-`4.0` speed range, and sentence-streamed MP3/PCM responses.
 - Replaced the Gradio interface with the shared Hangry Labs standalone FastAPI UI architecture used by KokoroTTS.
 - Added responsive expanded/compact branding, local Lucide icons, WaveSurfer playback and trimming, Generate/Stream/API/System workspaces, model residency controls, and complete demand-driven GPU telemetry with history, hover details, and bounded sampling.
@@ -262,7 +282,7 @@ task localdev
 - Moved the Docker and package baseline to Python 3.13 and CUDA 13.0 PyTorch wheels.
 - Removed Gradio and the obsolete `cached-path` dependency branch, then regenerated the Python 3.13 lockfile from `requirements.in`.
 - Expanded rapid local iteration tasks to mount the complete `melo/`, `assets/`, and `VERSION` surface without rebuilding the image.
-- Made full images and normal local runs explicitly default to all language families; EN images default to `EN`, `EN_V2`, and `EN_NEWEST`.
+- Made standard images and normal local runs default to the six clearly redistributable core model families; EN images default to `EN`, `EN_V2`, and `EN_NEWEST`.
 - Consolidated Docker publication into one strict, metadata-rich pipeline for matching Docker Hub and GHCR full/English-family images.
 - Replaced legacy artwork with optimized WebP sets for Melo T T S product surfaces and Hangry Labs organization surfaces.
 - Added structural tests for the standalone browser workspace.
@@ -398,5 +418,6 @@ task localdev
 
 ## License
 
-This fork is licensed under the [MIT License](LICENSE).
-Original work by Wenliang Zhao, Xumin Yu, and Zengyi Qin in [MeloTTS](https://github.com/myshell-ai/MeloTTS).
+The combined Melo TTS application is licensed under the [GNU Affero General Public License v3.0 only](LICENSE). You may use, modify, and redistribute it, including commercially. Distributors must provide corresponding source, and operators of modified network services must prominently offer corresponding source to their users.
+
+Original work by Wenliang Zhao, Xumin Yu, and Zengyi Qin in [MeloTTS](https://github.com/myshell-ai/MeloTTS), Bert-VITS2-derived portions, model terms, and bundled component licenses are documented in [Third-Party Notices](THIRD_PARTY_NOTICES.md). Individual components remain under their respective licenses.

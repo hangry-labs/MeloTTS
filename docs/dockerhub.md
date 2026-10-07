@@ -32,16 +32,16 @@ The examples include MP3 previews for every language plus multi-voice, multiling
 
 ## Quick Start
 
-Full multilingual image:
+Standard multilingual image with persistent models and settings:
 
 ```bash
-docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest
+docker run -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
 ```
 
 EN-focused image:
 
 ```bash
-docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest_en
+docker run -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
 ```
 
 Then open:
@@ -60,9 +60,15 @@ The container includes the web UI and the HTTP API on the same port.
 - Sentence-level streaming API for applications that want earlier audio delivery
 - Native speed and variation controls plus optional pitch, tempo, volume, and loudness normalization
 - Experimental opt-in SSML for dialogue, loaded speaker/language switching, per-segment prosody, and exact pauses
-- Full multilingual image and smaller EN-focused image
+- Standard multilingual image and smaller EN-focused image
+- Optional Spanish and Korean packs with an explicit upstream-terms warning
 - GPU support when Docker/NVIDIA support is available
-- Offline-friendly usage once the image and baked model assets are available locally
+- Offline core languages immediately; optional packs work offline after one online download
+
+Spanish and Korean are not baked into the image. Enable either one from the
+System tab while online after reviewing its upstream terms. The download is kept
+in `melotts_data`, so future image versions reuse it and no second download is
+needed. Disabling a pack unloads it but keeps the cached files.
 
 ## API Example
 
@@ -131,7 +137,7 @@ curl http://localhost:8888/tts/stream-formats
 
 ## Image Tags
 
-- Full multilingual image: `latest`, `<version>`
+- Standard multilingual image: `latest`, `<version>`
 - EN-focused image: `latest_en`, `<version>_en`
 
 Example release tags:
@@ -154,10 +160,15 @@ Docker Hub comments are not monitored regularly. GitHub Issues are the best plac
 
 CPU execution and NVIDIA CUDA acceleration are supported. Other GPU or accelerator backends are not advertised without suitable hardware for end-to-end testing; contact the project through GitHub Discussions to provide or sponsor test hardware.
 
+Set `TTS_LANGUAGES` to control which baked core language models load into memory.
+Spanish and Korean are controlled by persisted System settings instead.
+
 ## Attribution
 
 This is an independently maintained fork of the original MeloTTS project by Wenliang Zhao, Xumin Yu, and Zengyi Qin:
 
 https://github.com/myshell-ai/MeloTTS
 
-License and attribution are preserved in the repository. Original MeloTTS copyright remains with MyShell.ai; Hangry Labs maintains the Docker packaging, Web UI/API integration, examples page, documentation, release tooling, and other modifications in this fork.
+The combined application is AGPL-3.0-only. You may use it privately or commercially and call its API from separate applications. If you distribute a modified image or expose a modified Melo TTS service over a network, offer users the corresponding source. Original attribution, model-specific terms, and third-party notices are preserved at:
+
+https://github.com/hangry-labs/MeloTTS/blob/main/THIRD_PARTY_NOTICES.md

@@ -40,8 +40,7 @@ class TextModel(BaseModel):
         ge=-12.0,
         le=12.0,
         description=(
-            "Optional post-synthesis pitch shift in semitones. "
-            "Zero skips pitch processing."
+            "Optional post-synthesis pitch shift in semitones. Zero skips pitch processing."
         ),
     )
     tempo: float = Field(
@@ -88,9 +87,7 @@ class OpenAISpeechRequest(BaseModel):
     voice: str | dict[str, str] = Field(
         ..., description="Melo speaker ID returned by /v1/audio/voices."
     )
-    response_format: str = Field(
-        "mp3", description="Supported: mp3, opus, aac, flac, wav, pcm."
-    )
+    response_format: str = Field("mp3", description="Supported: mp3, opus, aac, flac, wav, pcm.")
     speed: float = Field(1.0, ge=0.25, le=4.0)
     instructions: str | None = Field(
         None, description="Reserved for OpenAI compatibility; not supported by MeloTTS."
@@ -110,3 +107,13 @@ class MetricsModel(BaseModel):
 
 class LanguageAction(BaseModel):
     language: str = Field(..., description="Configured language/model code.")
+
+
+class OptionalPackInstallRequest(BaseModel):
+    accept_upstream_terms: bool = Field(
+        False,
+        description=(
+            "Required confirmation that the operator reviewed and accepts the "
+            "optional model's upstream terms before downloading it."
+        ),
+    )

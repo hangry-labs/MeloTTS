@@ -43,13 +43,23 @@ from melo.openai_compat import (
     require_openai_api_key,
     resolve_openai_model_language,
 )
+from melo.optional_models import (
+    CORE_FULL_LANGUAGES,
+    OPTIONAL_LANGUAGE_CODES,
+    install_optional_pack,
+    optional_pack_installed,
+    optional_pack_inventory,
+    release_optional_encoder,
+)
 from melo.schemas import (
     LanguageAction,
     MetricsModel,
     OpenAISpeechRequest,
+    OptionalPackInstallRequest,
     StreamingTextModel,
     TextModel,
 )
+from melo.settings import RuntimeSettingsStore
 from melo.split_utils import split_sentence
 from melo.ssml import (
     MAX_PITCH_SEMITONES,
@@ -68,6 +78,8 @@ from melo.ssml import (
 from melo.standalone_ui.server import create_app as create_ui_app
 
 APP_ROOT = Path(__file__).resolve().parent.parent
+SOURCE_REPOSITORY_URL = "https://github.com/hangry-labs/MeloTTS"
+LICENSE_ID = "AGPL-3.0-only"
 
 
 def _read_non_empty_env(name: str):
@@ -117,6 +129,24 @@ def _resolve_runtime_version_and_build():
 
 
 VERSION, BUILD_ID = _resolve_runtime_version_and_build()
+
+
+def _resolve_corresponding_source_url():
+    if os.getenv("MELOTTS_UI_DEV", "0").strip().lower() in {"1", "true", "yes", "on"}:
+        return SOURCE_REPOSITORY_URL
+    revision = _read_non_empty_env("MELOTTS_VCS_REF")
+    if revision and revision.lower() not in {"unknown", "local"}:
+        return f"{SOURCE_REPOSITORY_URL}/tree/{revision}"
+    if VERSION.startswith("v") and not VERSION.lower().endswith("-snapshot"):
+        return f"{SOURCE_REPOSITORY_URL}/tree/{VERSION}"
+    return SOURCE_REPOSITORY_URL
+
+
+SOURCE_CODE_URL = _resolve_corresponding_source_url()
+THIRD_PARTY_NOTICES_URL = f"{SOURCE_CODE_URL}/blob/main/THIRD_PARTY_NOTICES.md"
+if "/tree/" in SOURCE_CODE_URL:
+    repository, revision = SOURCE_CODE_URL.rsplit("/tree/", 1)
+    THIRD_PARTY_NOTICES_URL = f"{repository}/blob/{revision}/THIRD_PARTY_NOTICES.md"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -183,15 +213,45 @@ logger.info(
 )
 RUNTIME_LABEL = get_runtime_label()
 logger.info(f"Runtime label: {RUNTIME_LABEL}")
-LANGUAGES = [
+RUNTIME_SETTINGS = RuntimeSettingsStore()
+requested_languages = [
     lang.strip()
-    for lang in os.getenv("TTS_LANGUAGES", "EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR").split(",")
+    for lang in os.getenv("TTS_LANGUAGES", ",".join(CORE_FULL_LANGUAGES)).split(",")
     if lang.strip()
 ]
+ignored_optional_languages = [
+    language for language in requested_languages if language in OPTIONAL_LANGUAGE_CODES
+]
+if ignored_optional_languages:
+    logger.warning(
+        "Ignoring optional TTS_LANGUAGES entries until enabled through persisted settings: %s",
+        ignored_optional_languages,
+    )
+core_languages = [
+    language for language in requested_languages if language not in OPTIONAL_LANGUAGE_CODES
+]
+enabled_optional_languages = RUNTIME_SETTINGS.optional_languages(OPTIONAL_LANGUAGE_CODES)
+available_optional_languages = [
+    language for language in enabled_optional_languages if optional_pack_installed(language)
+]
+missing_optional_languages = sorted(
+    set(enabled_optional_languages) - set(available_optional_languages)
+)
+if missing_optional_languages:
+    logger.warning(
+        "Disabling optional language packs whose persistent files are missing: %s",
+        missing_optional_languages,
+    )
+    RUNTIME_SETTINGS.set_optional_languages(
+        available_optional_languages, OPTIONAL_LANGUAGE_CODES
+    )
+enabled_optional_languages = available_optional_languages
+LANGUAGES = list(dict.fromkeys([*core_languages, *enabled_optional_languages]))
 logger.info(f"Loading models for languages: {LANGUAGES}")
 models = {}
 MODEL_LOCK = threading.RLock()
 INFERENCE_LOCK = threading.RLock()
+OPTIONAL_MODEL_LOCK = threading.RLock()
 
 
 def load_initial_models():
@@ -320,7 +380,12 @@ QUOTE_BANK = {
 
 PARAMETER_PRESETS = {
     "Balanced": {"speed": 1.0, "sdp_ratio": 0.2, "noise_scale": 0.6, "noise_scale_w": 0.8},
-    "Clear narration": {"speed": 0.92, "sdp_ratio": 0.18, "noise_scale": 0.45, "noise_scale_w": 0.7},
+    "Clear narration": {
+        "speed": 0.92,
+        "sdp_ratio": 0.18,
+        "noise_scale": 0.45,
+        "noise_scale_w": 0.7,
+    },
     "Expressive": {"speed": 1.0, "sdp_ratio": 0.35, "noise_scale": 0.75, "noise_scale_w": 0.9},
     "Fast preview": {"speed": 1.2, "sdp_ratio": 0.2, "noise_scale": 0.55, "noise_scale_w": 0.75},
     "Calm": {"speed": 0.85, "sdp_ratio": 0.15, "noise_scale": 0.4, "noise_scale_w": 0.65},
@@ -375,15 +440,20 @@ UI_DEFAULT_OUTPUT_FORMAT = "mp3" if "mp3" in get_supported_output_formats() else
 
 
 def get_status_payload():
+    enabled_optional = set(RUNTIME_SETTINGS.optional_languages(OPTIONAL_LANGUAGE_CODES))
     return {
         "msg": "pong",
         "type": "MeloTTS",
         "version": VERSION,
         "build_id": BUILD_ID,
+        "license": LICENSE_ID,
+        "source_code": SOURCE_CODE_URL,
+        "third_party_notices": THIRD_PARTY_NOTICES_URL,
         "device": DEVICE,
         "runtime": RUNTIME_LABEL,
         "configured_languages": LANGUAGES,
         "loaded_languages": get_loaded_languages(),
+        "optional_language_packs": optional_pack_inventory(enabled_optional),
         "presets": PARAMETER_PRESETS,
         "controls": {
             "native": ["speed", "sdp_ratio", "noise_scale", "noise_scale_w"],
@@ -407,6 +477,70 @@ def load_model_sync(language):
             logger.info("Loading TTS model for %s on demand", language)
             models[language] = TTS(language=language, device=DEVICE)
         return {"loaded": language, "loaded_languages": list(models.keys())}
+
+
+def optional_model_settings_payload():
+    enabled = set(RUNTIME_SETTINGS.optional_languages(OPTIONAL_LANGUAGE_CODES))
+    return {
+        "core_languages": list(core_languages),
+        "optional_language_packs": optional_pack_inventory(enabled),
+        "settings_path": str(RUNTIME_SETTINGS.path),
+        "cache_path": os.getenv("HF_HOME", str(Path.home() / ".cache" / "huggingface")),
+    }
+
+
+def install_optional_model_sync(language: str):
+    if language not in OPTIONAL_LANGUAGE_CODES:
+        raise HTTPException(
+            status_code=404, detail=f"Optional language pack '{language}' was not found"
+        )
+    try:
+        with OPTIONAL_MODEL_LOCK:
+            install_optional_pack(language)
+            with INFERENCE_LOCK, MODEL_LOCK:
+                model = models.get(language)
+                if model is None:
+                    logger.info("Loading optional TTS model for %s", language)
+                    model = TTS(language=language, device=DEVICE)
+                    models[language] = model
+                enabled = RUNTIME_SETTINGS.optional_languages(OPTIONAL_LANGUAGE_CODES)
+                if language not in enabled:
+                    enabled.append(language)
+                    RUNTIME_SETTINGS.set_optional_languages(enabled, OPTIONAL_LANGUAGE_CODES)
+                if language not in LANGUAGES:
+                    LANGUAGES.append(language)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Optional language pack %s could not be installed", language)
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Could not download and enable {language}. Check the internet connection "
+                f"and persistent volume, then try again: {exc}"
+            ),
+        ) from exc
+    return optional_model_settings_payload()
+
+
+def disable_optional_model_sync(language: str):
+    if language not in OPTIONAL_LANGUAGE_CODES:
+        raise HTTPException(
+            status_code=404, detail=f"Optional language pack '{language}' was not found"
+        )
+    with OPTIONAL_MODEL_LOCK, INFERENCE_LOCK, MODEL_LOCK:
+        models.pop(language, None)
+        enabled = RUNTIME_SETTINGS.optional_languages(OPTIONAL_LANGUAGE_CODES)
+        RUNTIME_SETTINGS.set_optional_languages(
+            [item for item in enabled if item != language], OPTIONAL_LANGUAGE_CODES
+        )
+        if language in LANGUAGES:
+            LANGUAGES.remove(language)
+        release_optional_encoder(language)
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    return optional_model_settings_payload()
 
 
 def purge_models_sync(language):
@@ -496,9 +630,7 @@ def resolve_ssml_language(value: str, default_language: str) -> str:
     resolved = SSML_LANGUAGE_ALIASES.get(normalized)
     if resolved in LANGUAGES:
         return resolved
-    raise ValueError(
-        f"Unsupported or unavailable SSML language '{value}'. See /tts/languages."
-    )
+    raise ValueError(f"Unsupported or unavailable SSML language '{value}'. See /tts/languages.")
 
 
 def resolve_ssml_voice_language(voice: str, default_language: str) -> str:
@@ -519,18 +651,14 @@ def prepare_ssml_plan(body: TextModel) -> list[SSMLSynthesisUnit]:
             body.language,
             default_voice=body.speaker_id,
             resolve_language=lambda value: resolve_ssml_language(value, body.language),
-            resolve_voice_language=lambda voice: resolve_ssml_voice_language(
-                voice, body.language
-            ),
+            resolve_voice_language=lambda voice: resolve_ssml_voice_language(voice, body.language),
         )
         for unit in plan:
             if unit.kind != "speech":
                 continue
             speakers = get_speakers_for_language(unit.language)
             if not speakers:
-                raise SSMLValidationError(
-                    f"SSML language model '{unit.language}' is not loaded."
-                )
+                raise SSMLValidationError(f"SSML language model '{unit.language}' is not loaded.")
             if unit.voice not in speakers:
                 raise SSMLValidationError(
                     f"Voice '{unit.voice}' is not available for language model "
@@ -572,9 +700,7 @@ def synthesize_ssml_speech(unit: SSMLSynthesisUnit, body: TextModel) -> tuple[np
     with MODEL_LOCK:
         model = models.get(unit.language)
     if model is None:
-        raise HTTPException(
-            status_code=404, detail=f"Language '{unit.language}' is not loaded"
-        )
+        raise HTTPException(status_code=404, detail=f"Language '{unit.language}' is not loaded")
     speaker_id = model.hps.data.spk2id[unit.voice]
     sample_rate = model.hps.data.sampling_rate
     effective = effective_ssml_prosody(unit.prosody, body)
@@ -599,9 +725,7 @@ def synthesize_ssml_speech(unit: SSMLSynthesisUnit, body: TextModel) -> tuple[np
             pieces.append(pause)
         pieces.append(np.asarray(audio, dtype=np.float32))
     audio = np.concatenate(pieces)
-    if audio_effects_enabled(
-        effective.pitch_semitones, effective.tempo, effective.volume, False
-    ):
+    if audio_effects_enabled(effective.pitch_semitones, effective.tempo, effective.volume, False):
         audio = apply_audio_effects(
             audio,
             sample_rate,
@@ -635,9 +759,7 @@ def iter_ssml_audio(
                 audio,
                 trim_leading=index > 0,
                 trim_trailing=index < len(plan) - 1,
-                append_implicit_pause=(
-                    index < len(plan) - 1 and plan[index + 1].kind == "speech"
-                ),
+                append_implicit_pause=(index < len(plan) - 1 and plan[index + 1].kind == "speech"),
                 sample_rate=output_sample_rate,
             )
             logger.info(
@@ -671,12 +793,23 @@ def ssml_response_headers(
 
 api = FastAPI(
     title="MeloTTS API",
-    description="OpenAI-compatible speech and native MeloTTS APIs",
+    description=(
+        "OpenAI-compatible speech and native MeloTTS APIs. "
+        f"Source code: [{SOURCE_CODE_URL}]({SOURCE_CODE_URL}) ({LICENSE_ID})."
+    ),
     version=VERSION,
     openapi_url="/tts/openapi.json",
     docs_url="/tts/docs",
     redoc_url="/tts/redoc",
 )
+
+
+@api.middleware("http")
+async def advertise_corresponding_source(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-MeloTTS-Source"] = SOURCE_CODE_URL
+    response.headers.append("Link", f'<{SOURCE_CODE_URL}>; rel="source"')
+    return response
 
 
 @api.exception_handler(OpenAIAPIError)
@@ -694,10 +827,7 @@ async def openai_api_error_handler(_request: Request, exc: OpenAIAPIError):
 @api.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     errors = exc.errors()
-    error_summary = [
-        {"type": error.get("type"), "location": error.get("loc")}
-        for error in errors
-    ]
+    error_summary = [{"type": error.get("type"), "location": error.get("loc")} for error in errors]
     logger.warning("Validation error for path %s: %s", request.url.path, error_summary)
     if request.url.path.startswith("/v1/"):
         first_error = errors[0] if errors else {}
@@ -732,10 +862,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 
 def openai_speakers_by_language():
-    return {
-        language: get_speakers_for_language(language)
-        for language in get_loaded_languages()
-    }
+    return {language: get_speakers_for_language(language) for language in get_loaded_languages()}
 
 
 def openai_voice_list(requested_model: str | None = None):
@@ -781,6 +908,43 @@ async def health_ready():
         },
         status_code=200 if ready else 503,
     )
+
+
+@api.get("/source", tags=["Legal"])
+async def source_offer():
+    """Return the corresponding-source location advertised to network users."""
+    return {
+        "name": "MeloTTS",
+        "version": VERSION,
+        "build_id": BUILD_ID,
+        "license": LICENSE_ID,
+        "source_code": SOURCE_CODE_URL,
+        "third_party_notices": THIRD_PARTY_NOTICES_URL,
+    }
+
+
+@api.get("/system/settings/models", tags=["System"])
+async def optional_model_settings():
+    return optional_model_settings_payload()
+
+
+@api.post("/system/models/{language}/install", tags=["System"])
+async def install_optional_model(language: str, body: OptionalPackInstallRequest):
+    language = language.strip().upper()
+    if not body.accept_upstream_terms:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Review the optional model's upstream terms and set "
+                "accept_upstream_terms=true before downloading."
+            ),
+        )
+    return await run_in_threadpool(install_optional_model_sync, language)
+
+
+@api.delete("/system/models/{language}", tags=["System"])
+async def disable_optional_model(language: str):
+    return await run_in_threadpool(disable_optional_model_sync, language.strip().upper())
 
 
 @api.get(
@@ -1046,7 +1210,9 @@ def stream_tts_audio(body: TextModel, route_name: str):
         return JSONResponse(status_code=500, content={"error": "TTS generation failed"})
 
 
-def iter_stream_audio(body: StreamingTextModel, model: TTS, stream_format: str, sample_rate: int, spk_id: int):
+def iter_stream_audio(
+    body: StreamingTextModel, model: TTS, stream_format: str, sample_rate: int, spk_id: int
+):
     def pcm_chunks():
         with INFERENCE_LOCK:
             for audio in model.iter_audio_segments(
@@ -1220,6 +1386,7 @@ def convert_tts(body: TextModel):
 
 app = create_ui_app(api_app=api)
 logger.info("Mounted standalone UI at / with TTS API routes under /tts")
+
 
 def main():
     import uvicorn

@@ -5,6 +5,8 @@ FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
+ENV HF_HOME=/app/baked/models/huggingface
+
 # Install system-level dependencies once
 RUN apt-get update && apt-get install -y \
     build-essential libsndfile1 libmecab-dev curl \
@@ -34,8 +36,9 @@ RUN --mount=type=bind,source=.build-cache/unidic,target=/tmp/unidic-cache,ro \
 # Copy only inference sources before model preload. UI and API-only edits can then
 # reuse the expensive model-download layer.
 RUN mkdir -p /app/melo
-COPY melo/__init__.py melo/api.py melo/attentions.py melo/commons.py \
-    melo/download_utils.py melo/init_downloads.py melo/models.py melo/modules.py \
+COPY melo/__init__.py melo/api.py melo/attentions.py melo/audio.py melo/commons.py \
+    melo/download_utils.py melo/init_downloads.py melo/model_registry.py melo/models.py melo/modules.py \
+    melo/optional_models.py \
     melo/split_utils.py melo/transforms.py melo/utils.py /app/melo/
 COPY melo/monotonic_align /app/melo/monotonic_align
 COPY melo/text /app/melo/text
@@ -52,7 +55,7 @@ RUN INIT_DOWNLOADS_STRICT=${INIT_DOWNLOADS_STRICT} \
     PYTHONPATH=/app \
     python melo/init_downloads.py || \
     if [ "${INIT_DOWNLOADS_STRICT}" = "1" ]; then exit 1; else echo "[WARN] init_downloads failed in non-strict mode; continuing build"; fi && \
-    find /root/.cache/huggingface/hub \
+    find ${HF_HOME}/hub \
         -type f \
         \( -name "*.h5" -o -name "*.tflite" -o -name "tf_model*" -o -name "*.onnx" -o -name "rust_model*" -o -name "*.msgpack" \) \
         -exec rm -f {} + 2>/dev/null || true
@@ -74,14 +77,20 @@ RUN APP_VERSION=${APP_VERSION} BUILD_DATE=${BUILD_DATE} BUILD_ID=${BUILD_ID} VCS
 # ============================================================
 FROM python:3.13-slim AS runtime
 
-LABEL org.opencontainers.image.source="https://github.com/hangry-labs/MeloTTS"
+LABEL org.opencontainers.image.source="https://github.com/hangry-labs/MeloTTS" \
+    org.opencontainers.image.documentation="https://github.com/hangry-labs/MeloTTS#readme" \
+    org.opencontainers.image.licenses="AGPL-3.0-only"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_ROOT_USER_ACTION=ignore \
-    HF_HUB_OFFLINE=1 \
-    TRANSFORMERS_OFFLINE=1 \
+    HF_HOME=/app/persistent/models/huggingface \
+    MELOTTS_PERSISTENT_ROOT=/app/persistent \
+    MELOTTS_SETTINGS_PATH=/app/persistent/app/settings.json \
+    MELOTTS_LOCAL_FILES_ONLY=1 \
+    HF_HUB_OFFLINE=0 \
+    TRANSFORMERS_OFFLINE=0 \
     HOST=0.0.0.0 \
     PORT=8888
 
@@ -94,7 +103,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ARG APP_VERSION=unknown
 ARG BUILD_DATE=unknown
 ARG BUILD_ID=""
-ARG DEFAULT_TTS_LANGUAGES="EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR"
+ARG DEFAULT_TTS_LANGUAGES="EN,EN_V2,EN_NEWEST,FR,ZH,JP"
 ARG VCS_REF=unknown
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
@@ -108,9 +117,10 @@ ENV BUILD_ID=${BUILD_ID} \
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
-COPY --from=builder /root/.cache/huggingface /root/.cache/huggingface
 COPY --from=builder /root/nltk_data /root/nltk_data
+
+RUN mkdir -p /app/persistent/app /app/persistent/models/huggingface
 
 # Expose port and run the app
 EXPOSE 8888
-CMD ["python", "./melo/app.py"]
+CMD ["python", "./melo/container_entrypoint.py"]

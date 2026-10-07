@@ -1,9 +1,12 @@
-import torch
-from transformers import AutoTokenizer, AutoModelForMaskedLM
 import sys
 
+import torch
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+from melo.model_registry import bert_revision_kwargs
+
 model_id = 'bert-base-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
 model = None
 
 def get_bert_feature(text, word2ph, device=None):
@@ -17,7 +20,9 @@ def get_bert_feature(text, word2ph, device=None):
     if not device:
         device = "cuda"
     if model is None:
-        model = AutoModelForMaskedLM.from_pretrained(model_id).to(
+        model = AutoModelForMaskedLM.from_pretrained(
+            model_id, **bert_revision_kwargs(model_id)
+        ).to(
             device
         )
     with torch.no_grad():

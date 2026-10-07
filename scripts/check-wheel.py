@@ -15,6 +15,11 @@ def main():
 
     required_exact = {
         "VERSION",
+        "LICENSE",
+        "LICENSES/Apache-2.0.txt",
+        "LICENSES/MIT-MeloTTS.txt",
+        "LICENSES/MIT-Tacotron.txt",
+        "THIRD_PARTY_NOTICES.md",
         "assets/melotts_favicon.webp",
         "assets/hangrylabs_logo.webp",
         "melo/ssml.py",

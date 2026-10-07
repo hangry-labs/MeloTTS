@@ -1,4 +1,7 @@
-""" from https://github.com/keithito/tacotron """
+"""Number normalization derived from https://github.com/keithito/tacotron.
+
+Copyright (c) 2017 Keith Ito. See LICENSES/MIT-Tacotron.txt.
+"""
 
 import re
 from typing import Dict
