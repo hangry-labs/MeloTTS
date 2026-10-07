@@ -38,6 +38,8 @@ class StandaloneUiTests(unittest.TestCase):
             with TestClient(create_app(api_app=self.backend_app())) as client:
                 index = client.get("/")
                 script = client.get("/static/app.js")
+                translations = client.get("/static/i18n.js")
+                locale_manifest = client.get("/static/locales/manifest.json")
                 stylesheet = client.get("/static/styles.css")
                 waveform = client.get("/static/vendor/wavesurfer/wavesurfer.esm.js")
                 product_logo = client.get("/assets/melotts_logo_horizontal.webp")
@@ -68,18 +70,27 @@ class StandaloneUiTests(unittest.TestCase):
         self.assertIn('src="/assets/melotts_logo_horizontal.webp"', index.text)
         self.assertIn('href="/assets/melotts_favicon.webp"', index.text)
         self.assertIn('src="/assets/hangrylabs_logo.webp"', index.text)
-        self.assertIn('<span>Source</span>', index.text)
-        self.assertIn('title="AGPL source code and license"', index.text)
+        self.assertIn('<span data-i18n="nav.source">Source</span>', index.text)
+        self.assertIn('data-i18n-title="nav.sourceTitle"', index.text)
+        self.assertIn("https://hangry-labs.github.io/MeloTTS/examples/?lang=en", index.text)
+        self.assertIn('href="https://hangrylabs.app/software/melotts"', index.text)
+        self.assertIn('id="ui-locale"', index.text)
+        self.assertIn('"locale":"en"', index.text)
+        self.assertIn('"messages":{"app.title":"Melo TTS"', index.text)
         self.assertNotIn("gradio", index.text.lower())
         self.assertEqual(script.status_code, 200)
+        self.assertEqual(translations.status_code, 200)
+        self.assertIn("localStorage.setItem(bootstrap.storageKey", translations.text)
+        self.assertEqual(locale_manifest.status_code, 200)
+        self.assertEqual(locale_manifest.json()["defaultLocale"], "en")
         self.assertIn("/tts/generate", script.text)
         self.assertIn("/tts/stream", script.text)
         self.assertIn("pitch_semitones: Number($('#pitch').value)", script.text)
         self.assertIn("input_type: state.inputType", script.text)
         self.assertIn("function setInputType(inputType)", script.text)
         self.assertIn("`/tts/${action}`", script.text)
-        self.assertIn("modelActionButton('Load', 'load'", script.text)
-        self.assertIn("modelActionButton('Keep only', 'purge'", script.text)
+        self.assertIn("modelActionButton(t('residency.load'), 'load'", script.text)
+        self.assertIn("modelActionButton(t('residency.keepOnly'), 'purge'", script.text)
         self.assertIn("/system/settings/models", script.text)
         self.assertIn("accept_upstream_terms: true", script.text)
         self.assertIn("function addGpuChartGrid(", script.text)
@@ -107,7 +118,16 @@ class StandaloneUiTests(unittest.TestCase):
         with TestClient(create_app(api_app=self.backend_app())) as client:
             self.assertEqual(client.get("/not-allowed").status_code, 404)
 
-    def test_english_catalog_covers_static_translation_keys(self) -> None:
+    def test_supported_locale_routes_and_catalogs_are_complete(self) -> None:
+        expected_locales = ("en", "es", "fr", "ja", "zh", "ko")
+        product_urls = {
+            "en": "https://hangrylabs.app/software/melotts",
+            "es": "https://hangrylabs.app/es/software/melotts",
+            "fr": "https://hangrylabs.app/software/melotts",
+            "ja": "https://hangrylabs.app/ja/software/melotts",
+            "zh": "https://hangrylabs.app/zh/software/melotts",
+            "ko": "https://hangrylabs.app/software/melotts",
+        }
         english = json.loads((LOCALES_DIR / "en.json").read_text(encoding="utf-8"))
         static_dir = LOCALES_DIR.parent
         referenced_keys = set(
@@ -125,6 +145,91 @@ class StandaloneUiTests(unittest.TestCase):
             )
 
         self.assertFalse(referenced_keys - set(english))
+        for dynamic_key in (
+            "languages.EN",
+            "languages.EN_V2",
+            "languages.EN_NEWEST",
+            "languages.FR",
+            "languages.ZH",
+            "languages.JP",
+            "languages.ES",
+            "languages.KR",
+            "presets.balanced",
+            "presets.expressive",
+            "optional.warning.ES",
+            "optional.warning.KR",
+        ):
+            self.assertIn(dynamic_key, english)
+
+        with TestClient(create_app(api_app=self.backend_app())) as client:
+            for locale in expected_locales:
+                response = client.get(f"/{locale}")
+                self.assertEqual(response.status_code, 200, locale)
+                self.assertIn(f'<html lang="{locale}" dir="ltr">', response.text)
+                self.assertIn(f'"locale":"{locale}"', response.text)
+                self.assertIn(
+                    f"https://hangry-labs.github.io/MeloTTS/examples/?lang={locale}",
+                    response.text,
+                )
+                self.assertIn(f'href="{product_urls[locale]}"', response.text)
+
+                catalog_response = client.get(f"/static/locales/{locale}.json")
+                self.assertEqual(catalog_response.status_code, 200, locale)
+                catalog = catalog_response.json()
+                self.assertEqual(set(catalog), set(english), locale)
+                self.assertTrue(
+                    all(isinstance(value, str) and value for value in catalog.values()),
+                    locale,
+                )
+
+            self.assertEqual(client.get("/de").status_code, 404)
+
+    def test_examples_page_supports_localized_language_filters(self) -> None:
+        root = LOCALES_DIR.parents[3]
+        page = (root / "examples" / "index.html").read_text(encoding="utf-8")
+        player = (root / "examples" / "player.js").read_text(encoding="utf-8")
+
+        for locale, label in (
+            ("en", "English"),
+            ("es", "Español"),
+            ("fr", "Français"),
+            ("ja", "日本語"),
+            ("zh", "简体中文"),
+            ("ko", "한국어"),
+        ):
+            self.assertIn(f'data-language-value="{locale}"', page)
+            self.assertIn(label, page)
+        self.assertIn('new URLSearchParams(window.location.search).get("lang")', player)
+        self.assertIn('setLanguageFilter(PAGE_LANGUAGES.has(requestedLanguage)', player)
+        self.assertIn('title: "Hangry Labs Melo TTS 음성 예제"', player)
+        self.assertIn('headline: "声音示例"', player)
+        self.assertIn('data-product-link', page)
+        self.assertIn('es: "https://hangrylabs.app/es/software/melotts"', player)
+        self.assertIn('zh: "https://hangrylabs.app/zh/software/melotts"', player)
+        self.assertNotIn("cdn.tailwindcss.com", page)
+
+    def test_public_documentation_language_navigation_is_utf8(self) -> None:
+        root = LOCALES_DIR.parents[3]
+        documents = [
+            root / "README.md",
+            root / "README.es.md",
+            root / "README.nb.md",
+            root / "README.pl.md",
+            root / "README.ja.md",
+            root / "README.zh.md",
+            root / "docs" / "dockerhub.md",
+        ]
+        labels = ("English", "Norsk bokmål", "Polski", "日本語", "简体中文", "Español")
+        for document in documents:
+            contents = document.read_text(encoding="utf-8")
+            for label in labels:
+                self.assertIn(label, contents, document.name)
+            for marker in ("Â·", "EspaÃ±ol", "FranÃ§ais", "æ—¥æœ¬èªž", "ÃƒÂ", "\ufffd"):
+                self.assertNotIn(marker, contents, document.name)
+            self.assertRegex(
+                contents,
+                r"https://hangrylabs\.app/(?:es/|ja/|nb/|pl/|zh/)?software/melotts",
+            )
 
     def test_development_assets_disable_browser_caching(self) -> None:
         with patch.dict("os.environ", {"MELOTTS_UI_DEV": "1"}):

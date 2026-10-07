@@ -4,6 +4,15 @@
   </a>
 </p>
 
+<p>
+  <strong>English</strong> ·
+  <a href="https://github.com/hangry-labs/MeloTTS/blob/main/README.nb.md">Norsk bokmål</a> ·
+  <a href="https://github.com/hangry-labs/MeloTTS/blob/main/README.pl.md">Polski</a> ·
+  <a href="https://github.com/hangry-labs/MeloTTS/blob/main/README.ja.md">日本語</a> ·
+  <a href="https://github.com/hangry-labs/MeloTTS/blob/main/README.zh.md">简体中文</a> ·
+  <a href="https://github.com/hangry-labs/MeloTTS/blob/main/README.es.md">Español</a>
+</p>
+
 # Hangry Labs Melo TTS
 
 Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
@@ -14,7 +23,7 @@ This Hangry Labs fork is built for people who want text to speech to work withou
 
 Voice examples are available here:
 
-https://hangry-labs.github.io/MeloTTS/examples/
+https://hangry-labs.github.io/MeloTTS/examples/?lang=en
 
 SSML dialogue examples are available here:
 
@@ -24,7 +33,8 @@ The examples include MP3 previews for every language plus multi-voice, multiling
 
 ## Project Links
 
-- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
+- Product page and installation guide: https://hangrylabs.app/software/melotts
+- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/?lang=en
 - SSML dialogues: https://hangry-labs.github.io/MeloTTS/examples/ssml.html
 - GitHub repository: https://github.com/hangry-labs/MeloTTS
 - Issues and support: https://github.com/hangry-labs/MeloTTS/issues
@@ -158,7 +168,8 @@ docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangryla
 
 ## Links
 
-- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/
+- Product page: https://hangrylabs.app/software/melotts
+- Voice examples: https://hangry-labs.github.io/MeloTTS/examples/?lang=en
 - SSML dialogues: https://hangry-labs.github.io/MeloTTS/examples/ssml.html
 - GitHub: https://github.com/hangry-labs/MeloTTS
 - Hangry Labs: https://hangrylabs.app/

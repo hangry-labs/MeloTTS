@@ -27,120 +27,122 @@
 </head>
 <body>
   <header class="brand-hero" id="brand-hero" data-collapsed="false">
-    <a class="labs-signature" href="https://hangrylabs.app/" target="_blank" rel="noreferrer" aria-label="Hangry Labs home">
-      <span class="powered-label">Powered by</span>
+    <a class="labs-signature" href="https://hangrylabs.app/" target="_blank" rel="noreferrer" aria-label="Hangry Labs home" data-i18n-aria-label="brand.home">
+      <span class="powered-label" data-i18n="brand.poweredBy">Powered by</span>
       <img class="labs-logo" src="/assets/hangrylabs_logo.webp" alt="Hangry Labs">
     </a>
-    <img class="collapsed-mascot optional-product-asset" src="/assets/melotts_favicon.webp" alt="Melo TTS icon">
-    <nav class="brand-nav" aria-label="Application links">
+    <img class="collapsed-mascot optional-product-asset" src="/assets/melotts_favicon.webp" alt="Melo TTS icon" data-i18n-alt="brand.mascotAlt">
+    <nav class="brand-nav" aria-label="Application links" data-i18n-aria-label="nav.aria">
       <div class="brand-links">
-        <a class="primary-link" href="https://hangry-labs.github.io/MeloTTS/examples/" target="_blank" rel="noreferrer"><i class="icon-sparkles"></i><span>Examples</span></a>
-        <a href="/tts/docs"><i class="icon-book-open"></i><span>API docs</span></a>
-        <a href="/tts/voices"><i class="icon-audio-lines"></i><span>Voices</span></a>
-        <a href="https://github.com/hangry-labs/MeloTTS" target="_blank" rel="noreferrer" title="AGPL source code and license"><i class="icon-git-branch"></i><span>Source</span></a>
-        <label class="locale-picker"><span class="visually-hidden">Interface language</span><select id="ui-locale" aria-label="Interface language"></select></label>
+        <a class="primary-link" href="https://hangry-labs.github.io/MeloTTS/examples/?lang={{UI_LOCALE}}" target="_blank" rel="noreferrer"><i class="icon-sparkles"></i><span data-i18n="nav.examples">Examples</span></a>
+        <a href="/tts/docs"><i class="icon-book-open"></i><span data-i18n="nav.apiDocs">API docs</span></a>
+        <a href="/tts/voices"><i class="icon-audio-lines"></i><span data-i18n="nav.voices">Voices</span></a>
+        <a href="https://github.com/hangry-labs/MeloTTS" target="_blank" rel="noreferrer" title="AGPL source code and license" data-i18n-title="nav.sourceTitle"><i class="icon-git-branch"></i><span data-i18n="nav.source">Source</span></a>
+        <label class="locale-picker"><span class="visually-hidden" data-i18n="locale.label">Interface language</span><select id="ui-locale" aria-label="Interface language" data-i18n-aria-label="locale.label"></select></label>
       </div>
     </nav>
     <div class="brand-copy">
       <h1>
-        <img class="product-logo optional-product-asset" src="/assets/melotts_logo_horizontal.webp" alt="Melo TTS - multilingual text to speech">
-        <span class="product-fallback">Melo <strong>Text to Speech</strong></span>
+        <a class="product-home" href="{{PRODUCT_URL}}" target="_blank" rel="noreferrer" aria-label="Open the Melo TTS product page" title="Open the Melo TTS product page" data-i18n-aria-label="brand.productHome" data-i18n-title="brand.productHome">
+          <img class="product-logo optional-product-asset" src="/assets/melotts_logo_horizontal.webp" alt="Melo TTS - multilingual text to speech" data-i18n-alt="brand.productAlt">
+          <span class="product-fallback">Melo <strong data-i18n="brand.textToSpeech">Text to Speech</strong></span>
+        </a>
       </h1>
     </div>
     <div class="runtime-badge" id="runtime-badge" data-state="starting">
       <i class="icon-activity"></i>
-      <div class="runtime-copy"><strong>Inference starting</strong><span id="runtime-model">Waiting for inference service</span></div>
-      <a class="runtime-version" href="https://github.com/hangry-labs/MeloTTS/releases" target="_blank" rel="noreferrer" title="Open Melo TTS releases"><span class="runtime-version-label">UI {{UI_VERSION}}</span>{{UI_BUILD_DETAILS}}</a>
+      <div class="runtime-copy"><strong data-i18n="runtime.starting">Inference starting</strong><span id="runtime-model" data-i18n="runtime.waiting">Waiting for inference service</span></div>
+      <a class="runtime-version" href="https://github.com/hangry-labs/MeloTTS/releases" target="_blank" rel="noreferrer" title="Open Melo TTS releases" data-i18n-title="runtime.openReleases"><span class="runtime-version-label">UI {{UI_VERSION}}</span>{{UI_BUILD_DETAILS}}</a>
     </div>
-    <button class="hero-toggle" id="hero-toggle" type="button" aria-controls="brand-hero" aria-expanded="true" aria-label="Collapse header" title="Collapse header"><i class="icon-chevron-up"></i></button>
+    <button class="hero-toggle" id="hero-toggle" type="button" aria-controls="brand-hero" aria-expanded="true" aria-label="Collapse header" title="Collapse header" data-i18n-aria-label="hero.collapse" data-i18n-title="hero.collapse"><i class="icon-chevron-up"></i></button>
   </header>
 
-  <div class="app-tabs" role="tablist" aria-label="Workspace views">
-    <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="generate">Generate</button>
-    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="stream">Stream</button>
-    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="api">API</button>
-    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="system">System</button>
+  <div class="app-tabs" role="tablist" aria-label="Workspace views" data-i18n-aria-label="tabs.aria">
+    <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="generate" data-i18n="tabs.generate">Generate</button>
+    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="stream" data-i18n="tabs.stream">Stream</button>
+    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="api" data-i18n="tabs.api">API</button>
+    <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="system" data-i18n="tabs.system">System</button>
   </div>
 
   <main class="workspace" data-view="generate">
     <aside class="settings-panel">
-      <div class="section-title"><i class="icon-sliders-horizontal"></i><span>Voice</span></div>
-      <label class="field"><span>Language model</span><select id="language"></select></label>
-      <label class="field"><span>Speaker</span><select id="voice"></select></label>
-      <label class="field"><span>Preset</span><select id="preset"></select></label>
+      <div class="section-title"><i class="icon-sliders-horizontal"></i><span data-i18n="voice.title">Voice</span></div>
+      <label class="field"><span data-i18n="voice.languageModel">Language model</span><select id="language"></select></label>
+      <label class="field"><span data-i18n="voice.speaker">Speaker</span><select id="voice"></select></label>
+      <label class="field"><span data-i18n="voice.preset">Preset</span><select id="preset"></select></label>
 
       <div class="settings-section">
         <div class="section-heading-row">
-          <div class="section-title"><i class="icon-audio-waveform"></i><span>Model controls</span></div>
-          <button class="icon-button reset-controls" id="reset-voice-controls" type="button" title="Reset voice controls" aria-label="Reset voice controls"><i class="icon-rotate-ccw"></i></button>
+          <div class="section-title"><i class="icon-audio-waveform"></i><span data-i18n="controls.modelTitle">Model controls</span></div>
+          <button class="icon-button reset-controls" id="reset-voice-controls" type="button" title="Reset voice controls" aria-label="Reset voice controls" data-i18n-title="controls.reset" data-i18n-aria-label="controls.reset"><i class="icon-rotate-ccw"></i></button>
         </div>
         <div class="range-stack">
-          <label class="range-control"><span class="range-heading"><span class="setting-name">Speed <span class="setting-help"><button type="button" aria-label="About speed" aria-describedby="speed-help">i</button><span class="setting-tooltip" id="speed-help" role="tooltip">Changes Melo model speaking speed and duration.</span></span></span></span><span class="range-input-row"><input id="speed-slider" type="range" min="0.5" max="2" step="0.05" value="1" data-value-input="speed"><input id="speed" class="number-input" type="number" min="0.5" max="2" step="0.05" value="1" aria-label="Speed value" data-range-input="speed-slider"></span></label>
-          <label class="range-control"><span class="range-heading"><span class="setting-name">SDP ratio <span class="setting-help"><button type="button" aria-label="About SDP ratio" aria-describedby="sdp-ratio-help">i</button><span class="setting-tooltip" id="sdp-ratio-help" role="tooltip">Blends deterministic and stochastic duration prediction. Higher values vary timing more.</span></span></span></span><span class="range-input-row"><input id="sdp-ratio-slider" type="range" min="0" max="1" step="0.01" value="0.2" data-value-input="sdp-ratio"><input id="sdp-ratio" class="number-input" type="number" min="0" max="1" step="0.01" value="0.2" aria-label="SDP ratio" data-range-input="sdp-ratio-slider"></span></label>
-          <label class="range-control"><span class="range-heading"><span class="setting-name">Acoustic noise <span class="setting-help"><button type="button" aria-label="About acoustic noise" aria-describedby="noise-scale-help">i</button><span class="setting-tooltip" id="noise-scale-help" role="tooltip">Controls acoustic sampling variation. Higher values can sound more varied but less stable.</span></span></span></span><span class="range-input-row"><input id="noise-scale-slider" type="range" min="0" max="1.5" step="0.01" value="0.6" data-value-input="noise-scale"><input id="noise-scale" class="number-input" type="number" min="0" max="1.5" step="0.01" value="0.6" aria-label="Acoustic noise" data-range-input="noise-scale-slider"></span></label>
-          <label class="range-control"><span class="range-heading"><span class="setting-name">Duration noise <span class="setting-help"><button type="button" aria-label="About duration noise" aria-describedby="noise-scale-w-help">i</button><span class="setting-tooltip" id="noise-scale-w-help" role="tooltip">Controls stochastic variation in phoneme durations.</span></span></span></span><span class="range-input-row"><input id="noise-scale-w-slider" type="range" min="0" max="1.5" step="0.01" value="0.8" data-value-input="noise-scale-w"><input id="noise-scale-w" class="number-input" type="number" min="0" max="1.5" step="0.01" value="0.8" aria-label="Duration noise" data-range-input="noise-scale-w-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.speed">Speed</span> <span class="setting-help"><button type="button" aria-label="About speed" aria-describedby="speed-help" data-i18n-aria-label="controls.aboutSpeed">i</button><span class="setting-tooltip" id="speed-help" role="tooltip" data-i18n="controls.speedHelp">Changes Melo model speaking speed and duration.</span></span></span></span><span class="range-input-row"><input id="speed-slider" type="range" min="0.5" max="2" step="0.05" value="1" data-value-input="speed"><input id="speed" class="number-input" type="number" min="0.5" max="2" step="0.05" value="1" aria-label="Speed value" data-i18n-aria-label="controls.speedValue" data-range-input="speed-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.sdpRatio">SDP ratio</span> <span class="setting-help"><button type="button" aria-label="About SDP ratio" aria-describedby="sdp-ratio-help" data-i18n-aria-label="controls.aboutSdpRatio">i</button><span class="setting-tooltip" id="sdp-ratio-help" role="tooltip" data-i18n="controls.sdpRatioHelp">Blends deterministic and stochastic duration prediction. Higher values vary timing more.</span></span></span></span><span class="range-input-row"><input id="sdp-ratio-slider" type="range" min="0" max="1" step="0.01" value="0.2" data-value-input="sdp-ratio"><input id="sdp-ratio" class="number-input" type="number" min="0" max="1" step="0.01" value="0.2" aria-label="SDP ratio" data-i18n-aria-label="controls.sdpRatioValue" data-range-input="sdp-ratio-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.acousticNoise">Acoustic noise</span> <span class="setting-help"><button type="button" aria-label="About acoustic noise" aria-describedby="noise-scale-help" data-i18n-aria-label="controls.aboutAcousticNoise">i</button><span class="setting-tooltip" id="noise-scale-help" role="tooltip" data-i18n="controls.acousticNoiseHelp">Controls acoustic sampling variation. Higher values can sound more varied but less stable.</span></span></span></span><span class="range-input-row"><input id="noise-scale-slider" type="range" min="0" max="1.5" step="0.01" value="0.6" data-value-input="noise-scale"><input id="noise-scale" class="number-input" type="number" min="0" max="1.5" step="0.01" value="0.6" aria-label="Acoustic noise" data-i18n-aria-label="controls.acousticNoiseValue" data-range-input="noise-scale-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.durationNoise">Duration noise</span> <span class="setting-help"><button type="button" aria-label="About duration noise" aria-describedby="noise-scale-w-help" data-i18n-aria-label="controls.aboutDurationNoise">i</button><span class="setting-tooltip" id="noise-scale-w-help" role="tooltip" data-i18n="controls.durationNoiseHelp">Controls stochastic variation in phoneme durations.</span></span></span></span><span class="range-input-row"><input id="noise-scale-w-slider" type="range" min="0" max="1.5" step="0.01" value="0.8" data-value-input="noise-scale-w"><input id="noise-scale-w" class="number-input" type="number" min="0" max="1.5" step="0.01" value="0.8" aria-label="Duration noise" data-i18n-aria-label="controls.durationNoiseValue" data-range-input="noise-scale-w-slider"></span></label>
         </div>
       </div>
 
       <div class="settings-section">
-        <div class="section-title"><i class="icon-sliders-horizontal"></i><span>Output controls</span></div>
+        <div class="section-title"><i class="icon-sliders-horizontal"></i><span data-i18n="controls.outputTitle">Output controls</span></div>
         <div class="range-stack">
-          <label class="range-control"><span class="range-heading"><span class="setting-name">Pitch <span class="setting-help"><button type="button" aria-label="About pitch" aria-describedby="pitch-help">i</button><span class="setting-tooltip" id="pitch-help" role="tooltip">Post-processing pitch shift in semitones. Zero skips processing.</span></span></span></span><span class="range-input-row"><input id="pitch-slider" type="range" min="-12" max="12" step="0.1" value="0" data-value-input="pitch"><input id="pitch" class="number-input" type="number" min="-12" max="12" step="0.1" value="0" aria-label="Pitch value" data-range-input="pitch-slider"></span></label>
-          <label class="range-control"><span class="range-heading"><span class="setting-name">Tempo <span class="setting-help"><button type="button" aria-label="About tempo" aria-describedby="tempo-help">i</button><span class="setting-tooltip" id="tempo-help" role="tooltip">Post-processing tempo multiplier independent of pitch. One skips processing.</span></span></span></span><span class="range-input-row"><input id="tempo-slider" type="range" min="0.5" max="2" step="0.1" value="1" data-value-input="tempo"><input id="tempo" class="number-input" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Tempo value" data-range-input="tempo-slider"></span></label>
-          <label class="range-control" id="volume-control"><span class="range-heading"><span class="setting-name">Volume <span class="setting-help"><button type="button" aria-label="About volume" aria-describedby="volume-help">i</button><span class="setting-tooltip" id="volume-help" role="tooltip">Output volume multiplier. One skips processing. Disabled during normalization.</span></span></span></span><span class="range-input-row"><input id="volume-slider" type="range" min="0" max="2" step="0.1" value="1" data-value-input="volume"><input id="volume" class="number-input" type="number" min="0" max="2" step="0.1" value="1" aria-label="Volume value" data-range-input="volume-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.pitch">Pitch</span> <span class="setting-help"><button type="button" aria-label="About pitch" aria-describedby="pitch-help" data-i18n-aria-label="controls.aboutPitch">i</button><span class="setting-tooltip" id="pitch-help" role="tooltip" data-i18n="controls.pitchHelp">Post-processing pitch shift in semitones. Zero skips processing.</span></span></span></span><span class="range-input-row"><input id="pitch-slider" type="range" min="-12" max="12" step="0.1" value="0" data-value-input="pitch"><input id="pitch" class="number-input" type="number" min="-12" max="12" step="0.1" value="0" aria-label="Pitch value" data-i18n-aria-label="controls.pitchValue" data-range-input="pitch-slider"></span></label>
+          <label class="range-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.tempo">Tempo</span> <span class="setting-help"><button type="button" aria-label="About tempo" aria-describedby="tempo-help" data-i18n-aria-label="controls.aboutTempo">i</button><span class="setting-tooltip" id="tempo-help" role="tooltip" data-i18n="controls.tempoHelp">Post-processing tempo multiplier independent of pitch. One skips processing.</span></span></span></span><span class="range-input-row"><input id="tempo-slider" type="range" min="0.5" max="2" step="0.1" value="1" data-value-input="tempo"><input id="tempo" class="number-input" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Tempo value" data-i18n-aria-label="controls.tempoValue" data-range-input="tempo-slider"></span></label>
+          <label class="range-control" id="volume-control"><span class="range-heading"><span class="setting-name"><span data-i18n="controls.volume">Volume</span> <span class="setting-help"><button type="button" aria-label="About volume" aria-describedby="volume-help" data-i18n-aria-label="controls.aboutVolume">i</button><span class="setting-tooltip" id="volume-help" role="tooltip" data-i18n="controls.volumeHelp">Output volume multiplier. One skips processing. Disabled during normalization.</span></span></span></span><span class="range-input-row"><input id="volume-slider" type="range" min="0" max="2" step="0.1" value="1" data-value-input="volume"><input id="volume" class="number-input" type="number" min="0" max="2" step="0.1" value="1" aria-label="Volume value" data-i18n-aria-label="controls.volumeValue" data-range-input="volume-slider"></span></label>
         </div>
-        <label class="toggle-field"><span>Normalize loudness</span><input id="normalize" type="checkbox"><span class="toggle-track" aria-hidden="true"></span></label>
+        <label class="toggle-field"><span data-i18n="controls.normalize">Normalize loudness</span><input id="normalize" type="checkbox"><span class="toggle-track" aria-hidden="true"></span></label>
       </div>
-      <div class="status-line" id="global-status" data-tone="neutral">Connecting to inference</div>
+      <div class="status-line" id="global-status" data-tone="neutral" data-i18n="status.connecting">Connecting to inference</div>
     </aside>
 
     <section class="content-panel">
       <section class="composer" id="composer">
         <div class="composer-heading">
-          <div class="section-title"><i class="icon-message-square-text"></i><span id="input-mode-label">Text</span></div>
+          <div class="section-title"><i class="icon-message-square-text"></i><span id="input-mode-label" data-i18n="composer.text">Text</span></div>
           <div class="composer-actions">
-            <span class="text-metrics" id="text-metrics">0 characters</span>
+            <span class="text-metrics" id="text-metrics" data-i18n="composer.zeroCharacters">0 characters</span>
             <div class="ssml-mode-control">
-              <button class="secondary-button compact-command ssml-mode-button" id="ssml-mode-button" type="button" aria-pressed="false" title="Enable experimental SSML input"><i class="icon-braces"></i>SSML<span>Experimental</span></button>
-              <button class="ssml-help-button" id="ssml-help-button" type="button" aria-label="Open experimental SSML guide" aria-haspopup="dialog" title="SSML rules">i</button>
+              <button class="secondary-button compact-command ssml-mode-button" id="ssml-mode-button" type="button" aria-pressed="false" title="Enable experimental SSML input" data-i18n-title="ssml.enable"><i class="icon-braces"></i>SSML<span data-i18n="ssml.experimental">Experimental</span></button>
+              <button class="ssml-help-button" id="ssml-help-button" type="button" aria-label="Open experimental SSML guide" aria-haspopup="dialog" title="SSML rules" data-i18n-aria-label="ssml.openGuide" data-i18n-title="ssml.rules">i</button>
             </div>
-            <button class="secondary-button compact-command" id="normalize-button" type="button"><i class="icon-braces"></i><span>Normalize spacing</span></button>
-            <button class="secondary-button compact-command" id="sample-button" type="button"><i class="icon-shuffle"></i><span>Random quote</span></button>
+            <button class="secondary-button compact-command" id="normalize-button" type="button"><i class="icon-braces"></i><span data-i18n="composer.normalizeSpacing">Normalize spacing</span></button>
+            <button class="secondary-button compact-command" id="sample-button" type="button"><i class="icon-shuffle"></i><span data-i18n="composer.randomQuote">Random quote</span></button>
           </div>
         </div>
-        <textarea id="text-input" rows="8" spellcheck="true" aria-label="Text to synthesize"></textarea>
+        <textarea id="text-input" rows="8" spellcheck="true" aria-label="Text to synthesize" data-i18n-aria-label="composer.textAria"></textarea>
       </section>
 
       <div class="tab-panel" data-panel="generate">
-        <div class="generate-action-row"><button class="primary-button" id="generate-button" type="button"><i class="icon-audio-lines"></i><span>Generate</span></button></div>
+        <div class="generate-action-row"><button class="primary-button" id="generate-button" type="button"><i class="icon-audio-lines"></i><span data-i18n="tabs.generate">Generate</span></button></div>
         <div id="generate-output"></div>
-        <div class="output-options"><label class="compact-field"><span>Output format</span><select id="output-format"></select></label></div>
+        <div class="output-options"><label class="compact-field"><span data-i18n="generate.outputFormat">Output format</span><select id="output-format"></select></label></div>
       </div>
 
       <div class="tab-panel" data-panel="stream" hidden>
-        <div class="command-row"><button class="secondary-button stop-button" id="stream-stop" type="button" disabled><i class="icon-square"></i><span>Stop</span></button><button class="primary-button" id="stream-start" type="button"><i class="icon-radio"></i><span>Stream</span></button></div>
+        <div class="command-row"><button class="secondary-button stop-button" id="stream-stop" type="button" disabled><i class="icon-square"></i><span data-i18n="stream.stop">Stop</span></button><button class="primary-button" id="stream-start" type="button"><i class="icon-radio"></i><span data-i18n="tabs.stream">Stream</span></button></div>
         <div id="stream-output"></div>
         <div class="stream-progress" id="stream-progress" hidden><span></span></div>
       </div>
 
       <div class="tab-panel" data-panel="api" hidden>
-        <div class="view-heading"><div><h2>API</h2><p>Live discovery responses from the running service</p></div><button class="secondary-button" id="api-refresh" type="button"><i class="icon-refresh-cw"></i><span>Refresh</span></button></div>
+        <div class="view-heading"><div><h2 data-i18n="tabs.api">API</h2><p data-i18n="api.description">Live discovery responses from the running service</p></div><button class="secondary-button" id="api-refresh" type="button"><i class="icon-refresh-cw"></i><span data-i18n="common.refresh">Refresh</span></button></div>
         <div class="data-output json-output" id="api-output"></div>
       </div>
 
       <div class="tab-panel" data-panel="system" hidden>
-        <div class="view-heading"><div><h2>System</h2><p>Runtime, resident language models, and GPU state</p></div></div>
+        <div class="view-heading"><div><h2 data-i18n="tabs.system">System</h2><p data-i18n="system.description">Runtime, resident language models, and GPU state</p></div></div>
         <div class="system-grid">
           <div class="system-info-stack">
             <section class="deployment-settings" aria-labelledby="served-models-title">
-              <div class="settings-toolbar"><div><div class="section-title" id="served-models-title"><i class="icon-audio-lines"></i><span>Language models</span></div><p>Core languages work offline. Optional Spanish and Korean packs require one acknowledged online download and remain in the persistent Docker volume for future releases.</p></div></div>
-              <div class="optional-model-heading">Optional online packs</div>
+              <div class="settings-toolbar"><div><div class="section-title" id="served-models-title"><i class="icon-audio-lines"></i><span data-i18n="models.title">Language models</span></div><p data-i18n="models.description">Core languages work offline. Optional Spanish and Korean packs require one acknowledged online download and remain in the persistent Docker volume for future releases.</p></div></div>
+              <div class="optional-model-heading" data-i18n="models.optionalPacks">Optional online packs</div>
               <div class="model-settings-groups optional-model-groups" id="optional-model-groups" aria-live="polite"></div>
-              <div class="optional-model-heading">Model residency</div>
+              <div class="optional-model-heading" data-i18n="models.residency">Model residency</div>
               <div class="model-settings-groups" id="model-settings-groups" aria-live="polite"></div>
             </section>
-            <section class="runtime-system-panel"><div class="section-title"><i class="icon-activity"></i><span>Runtime</span></div><div class="data-output json-output" id="runtime-output"></div></section>
-            <section class="voices-system-panel"><div class="section-title"><i class="icon-boxes"></i><span>Voices</span></div><div class="data-output json-output" id="voices-output"></div></section>
+            <section class="runtime-system-panel"><div class="section-title"><i class="icon-activity"></i><span data-i18n="system.runtime">Runtime</span></div><div class="data-output json-output" id="runtime-output"></div></section>
+            <section class="voices-system-panel"><div class="section-title"><i class="icon-boxes"></i><span data-i18n="nav.voices">Voices</span></div><div class="data-output json-output" id="voices-output"></div></section>
           </div>
           <section class="gpu-system-panel" id="gpu-output" aria-live="polite"></section>
         </div>
@@ -150,10 +152,10 @@
 
   <dialog class="ssml-dialog" id="ssml-help-dialog" aria-labelledby="ssml-dialog-title">
     <div class="ssml-dialog-heading">
-      <div><span>Experimental</span><h2 id="ssml-dialog-title">SSML input</h2></div>
-      <button class="icon-button bordered" id="ssml-help-close" type="button" aria-label="Close SSML guide" title="Close"><i class="icon-x"></i></button>
+      <div><span data-i18n="ssml.experimental">Experimental</span><h2 id="ssml-dialog-title" data-i18n="ssml.title">SSML input</h2></div>
+      <button class="icon-button bordered" id="ssml-help-close" type="button" aria-label="Close SSML guide" title="Close" data-i18n-aria-label="ssml.closeGuide" data-i18n-title="common.close"><i class="icon-x"></i></button>
     </div>
-    <p>SSML is used only while the orange SSML mode is active. Plain text remains the default. Melo can switch loaded language models and speakers between dialogue turns.</p>
+    <p data-i18n="ssml.intro">SSML is used only while the orange SSML mode is active. Plain text remains the default. Melo can switch loaded language models and speakers between dialogue turns.</p>
     <pre><code>&lt;speak&gt;
   &lt;voice name="EN-Newest"&gt;Good morning.&lt;/voice&gt;
   &lt;break time="250ms"/&gt;
@@ -162,29 +164,29 @@
   &lt;/voice&gt;
 &lt;/speak&gt;</code></pre>
     <div class="ssml-rule-grid">
-      <div><code>&lt;voice name="EN-Newest"&gt;...&lt;/voice&gt;</code><span>Switch to any speaker currently shown by the Voices endpoint. The speaker selects its native language model unless a language is explicitly nested.</span></div>
-      <div><code>&lt;lang xml:lang="es-ES"&gt;...&lt;/lang&gt;</code><span>Switch language models while retaining the current speaker. The speaker must exist in that model; use voice for reliable multilingual dialogue.</span></div>
-      <div><code>&lt;prosody speed="0.9" pitch="+2st" tempo="1.05" volume="0.9"&gt;...&lt;/prosody&gt;</code><span>Style one segment. Omitted or blank values inherit unchanged.</span></div>
-      <div><code>&lt;break time="500ms"/&gt;</code><span>Set the complete pause at this boundary, up to 10 seconds. Use 0ms for no gap; adjacent turns use 100ms.</span></div>
-      <div><code>&lt;sub alias="spoken text"&gt;label&lt;/sub&gt;</code><span>Speak the alias instead of the visible label.</span></div>
-      <div><code>&lt;say-as interpret-as="characters"&gt;API&lt;/say-as&gt;</code><span>Read characters separately.</span></div>
-      <div><code>&lt;say-as interpret-as="number"&gt;42&lt;/say-as&gt;</code><span>Read a numeric value normally.</span></div>
-      <div><code>&lt;say-as interpret-as="ordinal"&gt;3&lt;/say-as&gt;</code><span>Read an English ordinal. This is limited to English models.</span></div>
+      <div><code>&lt;voice name="EN-Newest"&gt;...&lt;/voice&gt;</code><span data-i18n="ssml.voiceHelp">Switch to any speaker currently shown by the Voices endpoint. The speaker selects its native language model unless a language is explicitly nested.</span></div>
+      <div><code>&lt;lang xml:lang="es-ES"&gt;...&lt;/lang&gt;</code><span data-i18n="ssml.languageHelp">Switch language models while retaining the current speaker. The speaker must exist in that model; use voice for reliable multilingual dialogue.</span></div>
+      <div><code>&lt;prosody speed="0.9" pitch="+2st" tempo="1.05" volume="0.9"&gt;...&lt;/prosody&gt;</code><span data-i18n="ssml.prosodyHelp">Style one segment. Omitted or blank values inherit unchanged.</span></div>
+      <div><code>&lt;break time="500ms"/&gt;</code><span data-i18n="ssml.breakHelp">Set the complete pause at this boundary, up to 10 seconds. Use 0ms for no gap; adjacent turns use 100ms.</span></div>
+      <div><code>&lt;sub alias="spoken text"&gt;label&lt;/sub&gt;</code><span data-i18n="ssml.subHelp">Speak the alias instead of the visible label.</span></div>
+      <div><code>&lt;say-as interpret-as="characters"&gt;API&lt;/say-as&gt;</code><span data-i18n="ssml.charactersHelp">Read characters separately.</span></div>
+      <div><code>&lt;say-as interpret-as="number"&gt;42&lt;/say-as&gt;</code><span data-i18n="ssml.numberHelp">Read a numeric value normally.</span></div>
+      <div><code>&lt;say-as interpret-as="ordinal"&gt;3&lt;/say-as&gt;</code><span data-i18n="ssml.ordinalHelp">Read an English ordinal. This is limited to English models.</span></div>
     </div>
-    <p class="ssml-dialog-note">Prosody ranges are speed and tempo 0.5-2, pitch -12st to +12st, and volume 0-2. Nested values compose with request controls and must remain in range. Complete-file normalization remains request-wide. One speak root is required. Documents are limited to 50,000 characters, 256 elements, and eight nesting levels. Breaks are limited to 10 seconds each and 30 seconds total. Unsupported markup, unsafe XML, and direct phoneme input are rejected.</p>
+    <p class="ssml-dialog-note" data-i18n="ssml.limits">Prosody ranges are speed and tempo 0.5-2, pitch -12st to +12st, and volume 0-2. Nested values compose with request controls and must remain in range. Complete-file normalization remains request-wide. One speak root is required. Documents are limited to 50,000 characters, 256 elements, and eight nesting levels. Breaks are limited to 10 seconds each and 30 seconds total. Unsupported markup, unsafe XML, and direct phoneme input are rejected.</p>
   </dialog>
 
   <dialog class="ssml-dialog optional-model-dialog" id="optional-model-dialog" aria-labelledby="optional-model-dialog-title">
     <div class="ssml-dialog-heading">
-      <div><span>Optional online download</span><h2 id="optional-model-dialog-title">Enable language pack</h2></div>
-      <button class="icon-button bordered" id="optional-model-close" type="button" aria-label="Close optional model warning" title="Close"><i class="icon-x"></i></button>
+      <div><span data-i18n="optional.eyebrow">Optional online download</span><h2 id="optional-model-dialog-title" data-i18n="optional.enablePack">Enable language pack</h2></div>
+      <button class="icon-button bordered" id="optional-model-close" type="button" aria-label="Close optional model warning" title="Close" data-i18n-aria-label="optional.closeWarning" data-i18n-title="common.close"><i class="icon-x"></i></button>
     </div>
     <p id="optional-model-warning"></p>
-    <p>The first download requires an internet connection. Model files are stored under <code>/app/persistent</code>; mount the documented Docker volume to keep them across container and image upgrades.</p>
-    <p><a id="optional-model-terms" href="#" target="_blank" rel="noreferrer">Review upstream model terms</a></p>
+    <p data-i18n="optional.downloadNotice">The first download requires an internet connection. Model files are stored under /app/persistent; mount the documented Docker volume to keep them across container and image upgrades.</p>
+    <p><a id="optional-model-terms" href="#" target="_blank" rel="noreferrer" data-i18n="optional.reviewTerms">Review upstream model terms</a></p>
     <div class="dialog-actions">
-      <button class="secondary-button" id="optional-model-cancel" type="button">Cancel</button>
-      <button class="primary-button" id="optional-model-install" type="button"><i class="icon-download"></i><span>Accept, download, and enable</span></button>
+      <button class="secondary-button" id="optional-model-cancel" type="button" data-i18n="common.cancel">Cancel</button>
+      <button class="primary-button" id="optional-model-install" type="button"><i class="icon-download"></i><span data-i18n="optional.acceptDownload">Accept, download, and enable</span></button>
     </div>
   </dialog>
 

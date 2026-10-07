@@ -130,7 +130,7 @@ function setHeroCollapsed(collapsed, persist = true, animate = true) {
   document.documentElement.dataset.headerCollapsed = String(collapsed)
   hero.dataset.collapsed = String(collapsed)
   toggle.setAttribute('aria-expanded', String(!collapsed))
-  toggle.setAttribute('aria-label', collapsed ? 'Expand header' : 'Collapse header')
+  toggle.setAttribute('aria-label', collapsed ? t('hero.expand') : t('hero.collapse'))
   toggle.title = toggle.getAttribute('aria-label')
   toggle.querySelector('i').className = collapsed ? 'icon-chevron-down' : 'icon-chevron-up'
   const endHeight = hero.getBoundingClientRect().height
@@ -219,6 +219,10 @@ function setSelectOptions(select, entries, selectedValue) {
   if (entries.some((entry) => entry.value === selectedValue && !entry.disabled)) select.value = selectedValue
 }
 
+function localizedLanguageName(language, fallback = language) {
+  return t(`languages.${language}`, {}, fallback)
+}
+
 function selectedPreset() {
   return state.defaults?.presets?.[$('#preset').value] || state.defaults?.presets?.Balanced
 }
@@ -260,7 +264,7 @@ $('#reset-voice-controls').addEventListener('click', () => {
   $('#preset').value = Object.hasOwn(state.defaults?.presets || {}, 'Balanced') ? 'Balanced' : $('#preset').options[0]?.value
   applyPreset()
   applyAudioControlDefaults()
-  setStatus('Voice controls reset', 'success')
+  setStatus(t('status.controlsReset'), 'success')
 })
 
 function escapeXml(value) {
@@ -304,20 +308,20 @@ function setInputType(inputType) {
   const button = $('#ssml-mode-button')
   button.classList.toggle('active', active)
   button.setAttribute('aria-pressed', String(active))
-  button.title = active ? 'Disable experimental SSML input' : 'Enable experimental SSML input'
+  button.title = active ? t('ssml.disable') : t('ssml.enable')
   $('#composer').dataset.inputType = inputType
-  $('#input-mode-label').textContent = active ? 'SSML' : 'Text'
+  $('#input-mode-label').textContent = active ? 'SSML' : t('composer.text')
   $('#normalize-button').disabled = active
   input.spellcheck = !active
-  input.setAttribute('aria-label', active ? 'Experimental SSML to synthesize' : 'Text to synthesize')
+  input.setAttribute('aria-label', active ? t('composer.ssmlAria') : t('composer.textAria'))
   updateTextMetrics()
 }
 
 function updateTextMetrics() {
   const text = $('#text-input').value
   const words = text.trim() ? text.trim().split(/\s+/u).length : 0
-  const label = state.inputType === 'ssml' ? 'SSML characters' : 'characters'
-  $('#text-metrics').textContent = `${text.length} ${label} / ${words} words`
+  const key = state.inputType === 'ssml' ? 'composer.metricsSsml' : 'composer.metricsText'
+  $('#text-metrics').textContent = t(key, { characters: text.length, words })
 }
 
 $('#text-input').addEventListener('input', () => {
@@ -364,7 +368,7 @@ $('#sample-button').addEventListener('click', () => {
   const quotes = state.defaults?.quotes?.[language] || []
   if (!quotes.length) return
   setComposerText(quotes[Math.floor(Math.random() * quotes.length)])
-  setStatus('Random quote ready', 'success')
+  setStatus(t('status.quoteReady'), 'success')
 })
 
 function requestPayload(outputFormat = $('#output-format').value) {
@@ -393,10 +397,10 @@ function responseFilename(response, fallback) {
 
 $('#generate-button').addEventListener('click', async () => {
   const payload = requestPayload()
-  if (!payload.text.trim()) return showToast('Enter text before generating audio.')
+  if (!payload.text.trim()) return showToast(t('errors.enterTextGenerate'))
   const button = $('#generate-button')
   button.disabled = true
-  setStatus('Generating audio')
+  setStatus(t('status.generating'))
   const started = performance.now()
   try {
     const response = await fetch('/tts/generate', {
@@ -408,9 +412,9 @@ $('#generate-button').addEventListener('click', async () => {
     const blob = await response.blob()
     await generateOutput.load(blob, responseFilename(response, `melotts_${payload.language}.${payload.format}`))
     await generateOutput.play().catch(() => {})
-    setStatus(`Generated in ${((performance.now() - started) / 1000).toFixed(2)}s`, 'success')
+    setStatus(t('status.generated', { seconds: ((performance.now() - started) / 1000).toFixed(2) }), 'success')
   } catch (error) {
-    setStatus('Generation failed', 'error')
+    setStatus(t('status.generationFailed'), 'error')
     showToast(errorMessage(error))
   } finally {
     button.disabled = false
@@ -500,12 +504,12 @@ async function loadStreamResult(chunks, language, autoplay) {
 
 $('#stream-start').addEventListener('click', async () => {
   const payload = { ...requestPayload('mp3'), stream_format: 'mp3' }
-  if (!payload.text.trim()) return showToast('Enter text before streaming audio.')
+  if (!payload.text.trim()) return showToast(t('errors.enterTextStream'))
   const controller = new AbortController()
   state.streamAbort = controller
   streamOutput.clear()
   setStreaming(true)
-  setStatus('Starting stream')
+  setStatus(t('status.startingStream'))
   const chunks = []
   const started = performance.now()
   let playback = null
@@ -519,7 +523,7 @@ $('#stream-start').addEventListener('click', async () => {
       signal: controller.signal,
     })
     if (!response.ok) throw new Error(await responseError(response))
-    if (!response.body) throw new Error('Streaming response body is unavailable in this browser.')
+    if (!response.body) throw new Error(t('errors.streamBody'))
     const reader = response.body.getReader()
     let totalBytes = 0
     while (true) {
@@ -528,7 +532,7 @@ $('#stream-start').addEventListener('click', async () => {
       chunks.push(value)
       totalBytes += value.byteLength
       if (playback) playback.append(value).catch((error) => showToast(errorMessage(error)))
-      setStatus(`Streaming ${(totalBytes / 1024).toFixed(0)} KiB`)
+      setStatus(t('status.streaming', { kib: (totalBytes / 1024).toFixed(0) }))
     }
     let resumeAt = 0
     if (playback) {
@@ -540,13 +544,13 @@ $('#stream-start').addEventListener('click', async () => {
     }
     await loadStreamResult(chunks, payload.language, !resumeAt)
     if (resumeAt) await streamOutput.playFrom(resumeAt).catch(() => {})
-    setStatus(`Stream complete in ${((performance.now() - started) / 1000).toFixed(2)}s`, 'success')
+    setStatus(t('status.streamComplete', { seconds: ((performance.now() - started) / 1000).toFixed(2) }), 'success')
   } catch (error) {
     if (error.name === 'AbortError') {
       await loadStreamResult(chunks, payload.language, false)
-      setStatus('Stream stopped', 'success')
+      setStatus(t('status.streamStopped'), 'success')
     } else {
-      setStatus('Stream failed', 'error')
+      setStatus(t('status.streamFailed'), 'error')
       showToast(errorMessage(error))
     }
   } finally {
@@ -558,7 +562,7 @@ $('#stream-start').addEventListener('click', async () => {
 })
 
 $('#stream-stop').addEventListener('click', () => {
-  setStatus('Stopping stream')
+  setStatus(t('status.stoppingStream'))
   state.streamAbort?.abort()
   state.streamPlayback?.stop()
 })
@@ -608,7 +612,7 @@ function createJsonNode(value, key, depth, expandDepth) {
   opening.textContent = array ? '[' : '{'
   const count = document.createElement('span')
   count.className = 'json-count'
-  count.textContent = `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`
+  count.textContent = t(entries.length === 1 ? 'json.oneItem' : 'json.items', { count: entries.length })
   const closing = document.createElement('span')
   closing.className = 'json-bracket json-collapsed-close'
   closing.textContent = array ? ']' : '}'
@@ -628,7 +632,7 @@ function renderJsonTree(container, value, expandDepth = 1) {
 }
 
 async function refreshApiStatus() {
-  $('#api-output').textContent = 'Loading...'
+  $('#api-output').textContent = t('common.loading')
   const paths = ['/tts/ping', '/tts/status', '/tts/defaults', '/tts/formats', '/tts/stream-formats', '/tts/languages', '/tts/voices', '/v1/models', '/v1/audio/voices']
   const values = await Promise.all(paths.map(async (path) => {
     try { return [path, await fetchJson(path)] } catch (error) { return [path, { error: errorMessage(error) }] }
@@ -653,7 +657,7 @@ function modelActionButton(label, action, language, primary = false) {
       })
       await refreshSystem()
       await loadWorkspace(false)
-      showToast(action === 'load' ? `${language} loaded` : `Kept ${language} loaded`, 'success')
+      showToast(t(action === 'load' ? 'residency.loadedToast' : 'residency.keptToast', { language }), 'success')
     } catch (error) {
       showToast(errorMessage(error))
     } finally {
@@ -675,22 +679,22 @@ function renderModelResidency(status) {
     const name = document.createElement('strong')
     name.textContent = language
     const residency = document.createElement('span')
-    residency.textContent = loaded.has(language) ? 'Loaded in memory' : 'Configured, not loaded'
+    residency.textContent = loaded.has(language) ? t('residency.loaded') : t('residency.notLoaded')
     copy.append(name, residency)
     const actions = document.createElement('div')
     actions.className = 'model-residency-actions'
-    if (!loaded.has(language)) actions.append(modelActionButton('Load', 'load', language, true))
-    if (loaded.size > 1 && loaded.has(language)) actions.append(modelActionButton('Keep only', 'purge', language))
+    if (!loaded.has(language)) actions.append(modelActionButton(t('residency.load'), 'load', language, true))
+    if (loaded.size > 1 && loaded.has(language)) actions.append(modelActionButton(t('residency.keepOnly'), 'purge', language))
     section.append(copy, actions)
     container.append(section)
   })
 }
 
 function optionalPackStatus(pack) {
-  if (pack.enabled && !pack.installed) return 'Disabled because persistent files are missing'
-  if (pack.enabled) return 'Enabled and stored persistently'
-  if (pack.installed) return 'Downloaded and ready to enable offline'
-  return 'Not downloaded - internet required once'
+  if (pack.enabled && !pack.installed) return t('optional.missingFiles')
+  if (pack.enabled) return t('optional.enabledPersistent')
+  if (pack.installed) return t('optional.downloadedOffline')
+  return t('optional.notDownloaded')
 }
 
 async function disableOptionalPack(pack, checkbox) {
@@ -701,7 +705,7 @@ async function disableOptionalPack(pack, checkbox) {
     })
     await refreshSystem()
     await loadWorkspace(false)
-    showToast(`${pack.name} disabled; downloaded files were kept`, 'success')
+    showToast(t('optional.disabledKept', { name: localizedLanguageName(pack.language, pack.name) }), 'success')
   } catch (error) {
     checkbox.checked = true
     showToast(errorMessage(error))
@@ -720,7 +724,7 @@ async function enableInstalledOptionalPack(pack, checkbox) {
     })
     await refreshSystem()
     await loadWorkspace(false)
-    showToast(`${pack.name} enabled from persistent storage`, 'success')
+    showToast(t('optional.enabledStored', { name: localizedLanguageName(pack.language, pack.name) }), 'success')
   } catch (error) {
     checkbox.checked = false
     showToast(errorMessage(error))
@@ -731,8 +735,8 @@ async function enableInstalledOptionalPack(pack, checkbox) {
 
 function openOptionalPackDialog(pack) {
   state.pendingOptionalPack = pack
-  $('#optional-model-dialog-title').textContent = `Enable ${pack.name}`
-  $('#optional-model-warning').textContent = pack.warning
+  $('#optional-model-dialog-title').textContent = t('optional.enableName', { name: localizedLanguageName(pack.language, pack.name) })
+  $('#optional-model-warning').textContent = t(`optional.warning.${pack.language}`, {}, pack.warning)
   $('#optional-model-terms').href = pack.terms_url
   $('#optional-model-dialog').showModal()
 }
@@ -746,7 +750,7 @@ function renderOptionalPacks(payload) {
     const copy = document.createElement('span')
     copy.className = 'model-setting-copy'
     const name = document.createElement('strong')
-    name.textContent = `${pack.name} (${pack.language})`
+    name.textContent = `${localizedLanguageName(pack.language, pack.name)} (${pack.language})`
     const status = document.createElement('span')
     status.className = 'optional-model-status'
     status.dataset.ready = String(pack.installed)
@@ -756,11 +760,11 @@ function renderOptionalPacks(payload) {
     terms.href = pack.terms_url
     terms.target = '_blank'
     terms.rel = 'noreferrer'
-    terms.textContent = 'Upstream terms'
+    terms.textContent = t('optional.upstreamTerms')
     copy.append(name, status, terms)
     const toggle = document.createElement('label')
     toggle.className = 'toggle-field'
-    toggle.setAttribute('aria-label', `Enable ${pack.name}`)
+    toggle.setAttribute('aria-label', t('optional.enableName', { name: localizedLanguageName(pack.language, pack.name) }))
     const checkbox = document.createElement('input')
     checkbox.type = 'checkbox'
     checkbox.checked = pack.enabled
@@ -798,7 +802,7 @@ $('#optional-model-install').addEventListener('click', async () => {
   if (!pack) return
   const button = $('#optional-model-install')
   button.disabled = true
-  button.querySelector('span').textContent = pack.installed ? 'Enabling...' : 'Downloading...'
+  button.querySelector('span').textContent = pack.installed ? t('optional.enabling') : t('optional.downloading')
   try {
     await fetchJson(`/system/models/${encodeURIComponent(pack.language)}/install`, {
       method: 'POST',
@@ -808,12 +812,12 @@ $('#optional-model-install').addEventListener('click', async () => {
     closeOptionalPackDialog()
     await refreshSystem()
     await loadWorkspace(false)
-    showToast(`${pack.name} enabled`, 'success')
+    showToast(t('optional.enabled', { name: localizedLanguageName(pack.language, pack.name) }), 'success')
   } catch (error) {
     showToast(errorMessage(error))
   } finally {
     button.disabled = false
-    button.querySelector('span').textContent = 'Accept, download, and enable'
+    button.querySelector('span').textContent = t('optional.acceptDownload')
   }
 })
 
@@ -1096,8 +1100,12 @@ function updateRuntime(status) {
   state.status = status
   const badge = $('#runtime-badge')
   badge.dataset.state = 'ready'
-  badge.querySelector('strong').textContent = 'Inference ready'
-  $('#runtime-model').textContent = `${(status.loaded_languages || []).length}/${(status.configured_languages || []).length} models / ${status.runtime}`
+  badge.querySelector('strong').textContent = t('runtime.ready')
+  $('#runtime-model').textContent = t('runtime.summary', {
+    loaded: (status.loaded_languages || []).length,
+    configured: (status.configured_languages || []).length,
+    runtime: status.runtime,
+  })
 }
 
 async function loadWorkspace(setInitialText = true) {
@@ -1111,9 +1119,15 @@ async function loadWorkspace(setInitialText = true) {
   state.voices = Array.isArray(voicesPayload) ? voicesPayload : voicesPayload.voices || []
   const loaded = state.voices.filter((item) => item.status === 'loaded' && item.speakers?.length)
   const previousLanguage = $('#language').value
-  setSelectOptions($('#language'), loaded.map((item) => ({ value: item.language, label: item.language })), previousLanguage || loaded[0]?.language)
+  setSelectOptions($('#language'), loaded.map((item) => ({
+    value: item.language,
+    label: `${localizedLanguageName(item.language)} (${item.language})`,
+  })), previousLanguage || loaded[0]?.language)
   refreshVoiceOptions($('#voice').value)
-  setSelectOptions($('#preset'), Object.keys(defaults.presets || {}).map((name) => ({ value: name, label: name })), 'Balanced')
+  setSelectOptions($('#preset'), Object.keys(defaults.presets || {}).map((name) => ({
+    value: name,
+    label: t(`presets.${name.toLowerCase()}`, {}, name),
+  })), 'Balanced')
   setSelectOptions(
     $('#output-format'),
     Object.entries(formats.formats || {}).map(([value, config]) => ({ value, label: config.label })),
@@ -1130,14 +1144,14 @@ async function loadWorkspace(setInitialText = true) {
   applyAudioControlDefaults()
   updateTextMetrics()
   updateRuntime(status)
-  setStatus('Ready', 'success')
+  setStatus(t('status.ready'), 'success')
 }
 
 async function pollReadiness() {
   try { updateRuntime(await fetchJson('/tts/status')) } catch {
     $('#runtime-badge').dataset.state = 'starting'
-    $('#runtime-badge strong').textContent = 'Inference starting'
-    $('#runtime-model').textContent = 'Waiting for inference service'
+    $('#runtime-badge strong').textContent = t('runtime.starting')
+    $('#runtime-model').textContent = t('runtime.waiting')
   }
   setTimeout(pollReadiness, 15000)
 }
@@ -1156,7 +1170,7 @@ window.addEventListener('beforeunload', () => {
 restoreSessionState()
 setHeroCollapsed(state.headerCollapsed, false, false)
 loadWorkspace().then(() => activateTab(state.activeTab)).catch((error) => {
-  setStatus('Connection failed', 'error')
+  setStatus(t('status.connectionFailed'), 'error')
   showToast(errorMessage(error))
 })
 pollReadiness()

@@ -80,6 +80,9 @@ def _locale_manifest() -> dict[str, object]:
                 "path": f"/{code}",
                 "direction": "rtl" if item.get("direction") == "rtl" else "ltr",
                 "browserLanguage": str(item.get("browserLanguage") or code),
+                "productUrl": str(
+                    item.get("productUrl") or "https://hangrylabs.app/software/melotts"
+                ),
             }
         )
     if default_locale not in seen:
@@ -126,6 +129,7 @@ def _index_response(locale: str) -> HTMLResponse:
         .replace("{{UI_BUILD_DETAILS}}", build_markup)
         .replace("{{UI_LOCALE}}", html.escape(locale))
         .replace("{{UI_DIRECTION}}", str(locale_entry["direction"]))
+        .replace("{{PRODUCT_URL}}", html.escape(str(locale_entry["productUrl"]), quote=True))
         .replace("{{UI_BOOTSTRAP}}", bootstrap_json)
     )
     return HTMLResponse(rendered_html, headers={"Cache-Control": "no-cache"})

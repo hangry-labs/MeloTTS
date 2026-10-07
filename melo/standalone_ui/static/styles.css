@@ -66,6 +66,8 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .locale-picker select:hover { border-color: rgba(255, 154, 85, 0.72); background-color: rgba(35, 23, 17, 0.9); }
 .brand-copy { position: absolute; top: 22px; left: 50%; display: block; width: min(580px, calc(100% - 112px)); margin: 0; text-align: center; transform: translateX(calc(-50% - 58px)); }
 .brand-copy h1 { display: block; width: 100%; margin: 0; line-height: 0; }
+.product-home { display: block; color: inherit; text-decoration: none; }
+.product-home:focus-visible { border-radius: 8px; outline: 2px solid var(--accent-hover); outline-offset: 5px; }
 .product-logo { display: block; width: 100%; height: auto; margin: 0 auto; filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.3)); }
 .asset-missing { display: none !important; }
 .product-fallback { display: block; color: #fff4eb; font-size: clamp(2rem, 5vw, 4.5rem); font-weight: 300; line-height: 1; text-shadow: 0 12px 24px rgba(0, 0, 0, 0.3); }

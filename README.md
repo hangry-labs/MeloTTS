@@ -1,7 +1,16 @@
 <p align="center">
-  <a href="https://hangrylabs.app/">
+  <a href="https://hangrylabs.app/software/melotts">
     <img src="assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo TTS logo" width="1000">
   </a>
+</p>
+
+<p align="center">
+  <strong>English</strong> ·
+  <a href="README.nb.md">Norsk bokmål</a> ·
+  <a href="README.pl.md">Polski</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.zh.md">简体中文</a> ·
+  <a href="README.es.md">Español</a>
 </p>
 
 # Hangry Labs Melo TTS
@@ -20,6 +29,8 @@ This Hangry Labs fork turns the original MeloTTS research project into a practic
 
 Official images are published on [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GitHub Container Registry](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
 
+Product overview and guided installation: [hangrylabs.app/software/melotts](https://hangrylabs.app/software/melotts).
+
 ## Contents
 
 - [Listen and Have a Look](#listen-and-have-a-look)
@@ -36,7 +47,7 @@ Official images are published on [Docker Hub](https://hub.docker.com/r/hangrylab
 
 ## Listen and Have a Look
 
-[Open the interactive voice examples](https://hangry-labs.github.io/MeloTTS/examples/) to compare every bundled language and English accent, or hear [multi-voice and multilingual SSML dialogues](https://hangry-labs.github.io/MeloTTS/examples/ssml.html). The browser application at `http://localhost:8888` adds waveform playback and trimming, generation and sentence-streaming workspaces, model controls, output controls, live API discovery, model residency management, and GPU telemetry.
+[Open the interactive voice examples](https://hangry-labs.github.io/MeloTTS/examples/?lang=en) to compare every bundled language and English accent, or hear [multi-voice and multilingual SSML dialogues](https://hangry-labs.github.io/MeloTTS/examples/ssml.html). The browser application at `http://localhost:8888` adds waveform playback and trimming, generation and sentence-streaming workspaces, model controls, output controls, live API discovery, model residency management, and GPU telemetry.
 
 <p align="center">
   <a href="assets/ui.webp">

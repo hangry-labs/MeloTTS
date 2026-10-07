@@ -157,6 +157,38 @@
         color: #ffb076;
       }
 
+      .language-filter {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin: 1.4rem 0 1rem;
+      }
+
+      .language-button {
+        appearance: none;
+        background: rgba(20, 20, 20, 0.84);
+        border: 1px solid rgba(255, 107, 0, 0.42);
+        border-radius: 999px;
+        color: #ffb076;
+        cursor: pointer;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1;
+        padding: 0.68rem 0.9rem;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .language-button:hover,
+      .language-button:focus-visible,
+      .language-button.is-active {
+        background: rgba(255, 107, 0, 0.22);
+        border-color: #ff6b00;
+        box-shadow: 0 0 16px rgba(255, 107, 0, 0.18);
+        color: #ffc394;
+        outline: none;
+      }
+
       .top-link {
         display: inline-flex;
         font-size: 0.875rem;
@@ -589,11 +621,11 @@
                   <img class="brand-logo" src="../assets/melotts_favicon.webp" alt="Melo TTS icon">
                   <div>
                     <div class="brand-name">Hangry Labs</div>
-                    <div class="brand-subtitle">Useful AI tools, easy to run</div>
+                    <div class="brand-subtitle" data-page-i18n="brandSubtitle">Useful AI tools, easy to run</div>
                   </div>
                 </a>
                 <div class="top-actions">
-                  <div class="volume-control" aria-label="Volume control">
+                  <div class="volume-control" aria-label="Volume control" data-page-i18n-aria="volumeControl">
                     <button class="volume-button" type="button" aria-label="Mute audio" data-muted="false">
                       <svg class="volume-icon-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.5 15.5H4.75A1.75 1.75 0 013 13.75v-3.5c0-.97.78-1.75 1.75-1.75H6.5l5-4.25v15.5l-5-4.25zM16 8.5a5 5 0 010 7M18.75 6a8.5 8.5 0 010 12"></path>
@@ -602,133 +634,143 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.5 15.5H4.75A1.75 1.75 0 013 13.75v-3.5c0-.97.78-1.75 1.75-1.75H6.5l5-4.25v15.5l-5-4.25zM17 9.5l4 4M21 9.5l-4 4"></path>
                       </svg>
                     </button>
-                    <input class="volume-slider" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Volume">
+                    <input class="volume-slider" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Volume" data-page-i18n-aria="volume">
                   </div>
                   <nav class="top-links" aria-label="Project links">
-                    <a class="pill top-link" href="ssml.html">SSML dialogues</a>
+                    <a class="pill top-link" href="ssml.html" data-page-i18n="ssmlDialogues">SSML dialogues</a>
                     <a class="pill top-link" href="https://hub.docker.com/r/hangrylabs/melotts/tags">Docker Hub</a>
                     <a class="pill top-link" href="https://github.com/hangry-labs/MeloTTS">GitHub</a>
                   </nav>
                 </div>
               </div>
-              <h1 class="brand-glow page-title">
+              <h1 class="brand-glow page-title" data-page-i18n="headline">
                 Voice examples
               </h1>
-              <p class="intro-copy">
+              <p class="intro-copy" data-page-i18n="intro">
                 Easy-run text-to-speech Docker images with a browser UI and HTTP API.
                 These samples show the voices people will hear before they decide to run
                 the container or connect it to an application.
               </p>
             </div>
             <div class="hero-logo-panel" aria-hidden="true">
-              <a class="hero-logo-link" href="https://hangrylabs.app/" target="_blank" rel="noopener noreferrer" tabindex="-1">
+              <a class="hero-logo-link" href="https://hangrylabs.app/software/melotts" target="_blank" rel="noopener noreferrer" tabindex="-1" data-product-link>
                 <img class="hero-logo" src="../assets/melotts_logo.webp" alt="">
               </a>
-              <a class="hero-site-link" href="https://hangrylabs.app/" target="_blank" rel="noopener noreferrer">hangrylabs.app</a>
+              <a class="hero-site-link" href="https://hangrylabs.app/software/melotts" target="_blank" rel="noopener noreferrer" data-product-link>hangrylabs.app</a>
             </div>
           </div>
         </header>
 
-        <section class="voice-grid" aria-label="Voice examples">
-          <article class="brand-card">
+        <section class="language-filter" aria-label="Filter voice examples by language" data-page-i18n-aria="filterLabel">
+          <button class="language-button" type="button" data-language-value="all" aria-pressed="false" data-page-i18n="all">All</button>
+          <button class="language-button is-active" type="button" data-language-value="en" aria-pressed="true">English</button>
+          <button class="language-button" type="button" data-language-value="es" aria-pressed="false">Español</button>
+          <button class="language-button" type="button" data-language-value="fr" aria-pressed="false">Français</button>
+          <button class="language-button" type="button" data-language-value="ja" aria-pressed="false">日本語</button>
+          <button class="language-button" type="button" data-language-value="zh" aria-pressed="false">简体中文</button>
+          <button class="language-button" type="button" data-language-value="ko" aria-pressed="false">한국어</button>
+        </section>
+
+        <section class="voice-grid" aria-label="Voice examples" data-page-i18n-aria="examplesLabel">
+          <article class="brand-card" data-language="en" data-sample-key="enBritish">
             <div class="card-heading">
-              <h2 class="voice-name">English British</h2>
+              <h2 class="voice-name" data-sample-name>English British</h2>
               <span class="voice-code">EN-BR</span>
             </div>
             <audio preload="metadata" src="melotts-en-br.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="enNewest">
             <div class="card-heading">
-              <h2 class="voice-name">English newest</h2>
+              <h2 class="voice-name" data-sample-name>English newest</h2>
               <span class="voice-code">EN_NEWEST</span>
             </div>
             <audio preload="metadata" src="melotts-en-newest.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="enV2">
             <div class="card-heading">
-              <h2 class="voice-name">English v2</h2>
+              <h2 class="voice-name" data-sample-name>English v2</h2>
               <span class="voice-code">EN_V2</span>
             </div>
             <audio preload="metadata" src="melotts-en-v2.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="en">
             <div class="card-heading">
-              <h2 class="voice-name">English</h2>
+              <h2 class="voice-name" data-sample-name>English</h2>
               <span class="voice-code">EN-US</span>
             </div>
             <audio preload="metadata" src="melotts-en.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="enIndian">
             <div class="card-heading">
-              <h2 class="voice-name">English Indian</h2>
+              <h2 class="voice-name" data-sample-name>English Indian</h2>
               <span class="voice-code">EN_INDIA</span>
             </div>
             <audio preload="metadata" src="melotts-en-india.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="enAustralian">
             <div class="card-heading">
-              <h2 class="voice-name">English Australian</h2>
+              <h2 class="voice-name" data-sample-name>English Australian</h2>
               <span class="voice-code">EN-AU</span>
             </div>
             <audio preload="metadata" src="melotts-en-au.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="enAmerican">
             <div class="card-heading">
-              <h2 class="voice-name">English American</h2>
+              <h2 class="voice-name" data-sample-name>English American</h2>
               <span class="voice-code">EN-US</span>
             </div>
             <audio preload="metadata" src="melotts-en-us.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="en" data-sample-key="enDefault">
             <div class="card-heading">
-              <h2 class="voice-name">English default</h2>
+              <h2 class="voice-name" data-sample-name>English default</h2>
               <span class="voice-code">EN-Default</span>
             </div>
             <audio preload="metadata" src="melotts-en-default.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="es" data-sample-key="spanish">
             <div class="card-heading">
-              <h2 class="voice-name">Spanish</h2>
+              <h2 class="voice-name" data-sample-name>Spanish</h2>
               <span class="voice-code">ES</span>
             </div>
             <audio preload="metadata" src="melotts-es.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="fr" data-sample-key="french">
             <div class="card-heading">
-              <h2 class="voice-name">French</h2>
+              <h2 class="voice-name" data-sample-name>French</h2>
               <span class="voice-code">FR</span>
             </div>
             <audio preload="metadata" src="melotts-fr.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="zh" data-sample-key="chinese">
             <div class="card-heading">
-              <h2 class="voice-name">Chinese</h2>
+              <h2 class="voice-name" data-sample-name>Chinese</h2>
               <span class="voice-code">ZH</span>
             </div>
             <audio preload="metadata" src="melotts-zh.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="ja" data-sample-key="japanese">
             <div class="card-heading">
-              <h2 class="voice-name">Japanese</h2>
+              <h2 class="voice-name" data-sample-name>Japanese</h2>
               <span class="voice-code">JP</span>
             </div>
             <audio preload="metadata" src="melotts-jp.mp3"></audio>
           </article>
 
-          <article class="brand-card">
+          <article class="brand-card" data-language="ko" data-sample-key="korean">
             <div class="card-heading">
-              <h2 class="voice-name">Korean</h2>
+              <h2 class="voice-name" data-sample-name>Korean</h2>
               <span class="voice-code">KR</span>
             </div>
             <audio preload="metadata" src="melotts-kr.mp3"></audio>

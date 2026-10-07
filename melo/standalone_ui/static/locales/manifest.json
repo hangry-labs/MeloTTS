@@ -1,6 +1,11 @@
 {
   "defaultLocale": "en",
   "locales": [
-    { "code": "en", "name": "English", "browserLanguage": "en-US", "direction": "ltr" }
+    { "code": "en", "name": "English", "browserLanguage": "en-US", "direction": "ltr", "productUrl": "https://hangrylabs.app/software/melotts" },
+    { "code": "es", "name": "Español", "browserLanguage": "es-ES", "direction": "ltr", "productUrl": "https://hangrylabs.app/es/software/melotts" },
+    { "code": "fr", "name": "Français", "browserLanguage": "fr-FR", "direction": "ltr", "productUrl": "https://hangrylabs.app/software/melotts" },
+    { "code": "ja", "name": "日本語", "browserLanguage": "ja-JP", "direction": "ltr", "productUrl": "https://hangrylabs.app/ja/software/melotts" },
+    { "code": "zh", "name": "简体中文", "browserLanguage": "zh-CN", "direction": "ltr", "productUrl": "https://hangrylabs.app/zh/software/melotts" },
+    { "code": "ko", "name": "한국어", "browserLanguage": "ko-KR", "direction": "ltr", "productUrl": "https://hangrylabs.app/software/melotts" }
   ]
 }
