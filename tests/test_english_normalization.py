@@ -1,6 +1,10 @@
 import unittest
 
 from melo.text.english_utils.normalization import normalize_english_tokens
+from melo.text.english_utils.pronunciation import (
+    expand_informal_g_dropping,
+    lookup_pronunciation,
+)
 
 
 class EnglishTokenNormalizationTests(unittest.TestCase):
@@ -27,6 +31,38 @@ class EnglishTokenNormalizationTests(unittest.TestCase):
             normalize_english_tokens("HTTPServer"),
             "aitch tee tee pee Server",
         )
+
+    def test_dictionary_backed_informal_g_dropping_is_expanded(self):
+        known_words = {"CHOKING", "JOKING", "RUNNING"}
+        self.assertEqual(
+            expand_informal_g_dropping(
+                "He's chokin', everybody\u2019s jokin', and we're runnin'.",
+                known_words,
+            ),
+            "He's choking, everybody\u2019s joking, and we're running.",
+        )
+
+    def test_valid_or_unknown_apostrophe_words_are_preserved(self):
+        known_words = {"SIN", "SING"}
+        self.assertEqual(
+            expand_informal_g_dropping("sin' somethin'", known_words),
+            "sin' somethin'",
+        )
+
+    def test_plugin_pronunciation_overrides_g2p_fallback(self):
+        fallback = {"PLUGIN": (("P", "L", "UW1", "G"), ("IH0", "N"))}
+        self.assertEqual(
+            lookup_pronunciation("plugin", fallback),
+            (("P", "L", "AH1", "G"), ("IH0", "N")),
+        )
+        self.assertEqual(
+            lookup_pronunciation("plugins", {}),
+            (("P", "L", "AH1", "G"), ("IH0", "N", "Z")),
+        )
+
+    def test_ordinary_dictionary_pronunciation_is_unchanged(self):
+        fallback = {"HELLO": (("HH", "AH0"), ("L", "OW1"))}
+        self.assertEqual(lookup_pronunciation("hello", fallback), fallback["HELLO"])
 
 
 if __name__ == "__main__":

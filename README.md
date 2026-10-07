@@ -296,6 +296,7 @@ task localdev
 - Added a dedicated SSML examples page with five reproducibly generated MP3 dialogues, exact copyable scripts, branded playback controls, and a validation task for regenerating the media through a live Melo service.
 - Documented the distinction between native Melo synthesis controls, post-processing controls, and unsupported named-emotion conditioning.
 - Fixed case-sensitive English initialisms and mixed Chinese/English product names: uppercase terms such as `US`, `NLP`, `LLM`, `AI`, `AIGC`, and `SDXL` are now spoken as letters, while lowercase words such as `us` retain their normal pronunciation and camel-case names retain their word boundaries.
+- Fixed reproducible English cleaner errors for dropped-`g` spellings such as `chokin'` and `jokin'`, and corrected `plugin`/`plugins` to use the short vowel from `plug` instead of the `g2p-en` fallback's "ploogin" pronunciation.
 - Reorganized the README around examples, startup, API use, images, development, project context, and release history.
 
 <details>

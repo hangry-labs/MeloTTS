@@ -11,6 +11,10 @@ from . import symbols
 from .english_utils.abbreviations import expand_abbreviations
 from .english_utils.normalization import normalize_english_tokens
 from .english_utils.number_norm import normalize_numbers
+from .english_utils.pronunciation import (
+    expand_informal_g_dropping,
+    lookup_pronunciation,
+)
 from .english_utils.time_norm import expand_time_english
 from .japanese import distribute_phone
 
@@ -182,6 +186,7 @@ def refine_syllables(syllables):
 
 def text_normalize(text):
     text = normalize_english_tokens(text)
+    text = expand_informal_g_dropping(text, eng_dict)
     text = text.lower()
     text = expand_time_english(text)
     text = normalize_numbers(text)
@@ -195,8 +200,9 @@ def g2p_old(text):
     tones = []
     words = re.split(r"([,;.\-\?\!\s+])", text)
     for w in words:
-        if w.upper() in eng_dict:
-            phns, tns = refine_syllables(eng_dict[w.upper()])
+        pronunciation = lookup_pronunciation(w, eng_dict)
+        if pronunciation is not None:
+            phns, tns = refine_syllables(pronunciation)
             phones += phns
             tones += tns
         else:
@@ -232,8 +238,9 @@ def g2p(text, pad_start_end=True, tokenized=None):
         w = "".join(group)
         phone_len = 0
         word_len = len(group)
-        if w.upper() in eng_dict:
-            phns, tns = refine_syllables(eng_dict[w.upper()])
+        pronunciation = lookup_pronunciation(w, eng_dict)
+        if pronunciation is not None:
+            phns, tns = refine_syllables(pronunciation)
             phones += phns
             tones += tns
             phone_len += len(phns)

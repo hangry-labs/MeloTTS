@@ -8,8 +8,9 @@ from melo.model_registry import bert_revision_kwargs
 
 # from text.symbols import punctuation
 from .chinese_numbers import normalize_chinese_numbers
-from .english import g2p as g2p_en
+from .english import eng_dict, g2p as g2p_en
 from .english_utils.normalization import normalize_english_tokens
+from .english_utils.pronunciation import expand_informal_g_dropping
 from .symbols import language_tone_start_map
 from .tone_sandhi import ToneSandhi
 
@@ -190,6 +191,7 @@ def _g2p(segments):
 
 def text_normalize(text):
     text = normalize_english_tokens(text)
+    text = expand_informal_g_dropping(text, eng_dict)
     text = normalize_chinese_numbers(text)
     text = replace_punctuation(text)
     return text
