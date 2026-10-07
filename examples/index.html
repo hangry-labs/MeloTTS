@@ -3,10 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hangry Labs Melo T T S Voice Examples</title>
+    <title>Hangry Labs Melo TTS Voice Examples</title>
     <link rel="icon" type="image/webp" href="../assets/melotts_favicon.webp">
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
       html,
       body {
         margin: 0;
@@ -15,6 +20,24 @@
         background: #000;
         color: #ffb076;
         scroll-behavior: smooth;
+      }
+
+      body,
+      button,
+      input {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      img,
+      svg {
+        display: block;
+        max-width: 100%;
       }
 
       canvas {
@@ -44,12 +67,27 @@
         z-index: -1;
       }
 
+      .content-shell {
+        display: flex;
+        flex-direction: column;
+        margin: 0 auto;
+        max-width: 72rem;
+        min-height: 100vh;
+        padding: 0.75rem 1rem;
+        width: 100%;
+      }
+
+      .page-header {
+        margin-bottom: 2rem;
+      }
+
       .brand-card {
         background: rgba(20, 20, 20, 0.94);
         border: 2px solid rgba(255, 107, 0, 0.3);
         border-radius: 12px;
         box-shadow: 0 0 28px rgba(255, 107, 0, 0.12);
         cursor: pointer;
+        padding: 1.25rem;
         transition:
           border-color 0.25s ease,
           box-shadow 0.25s ease,
@@ -97,11 +135,34 @@
           0 0 48px rgba(255, 60, 0, 0.28);
       }
 
+      .page-title {
+        font-size: 3.75rem;
+        font-weight: 800;
+        line-height: 1;
+        max-width: 56rem;
+      }
+
+      .intro-copy {
+        color: #ffb076;
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+        margin-top: 1.25rem;
+        max-width: 48rem;
+      }
+
       .pill {
         border: 1px solid rgba(255, 107, 0, 0.42);
         background: rgba(255, 107, 0, 0.12);
         border-radius: 999px;
         color: #ffb076;
+      }
+
+      .top-link {
+        display: inline-flex;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        text-decoration: none;
       }
 
       .topbar {
@@ -370,6 +431,37 @@
         text-align: right;
       }
 
+      .voice-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .card-heading {
+        align-items: center;
+        border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+        display: flex;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+      }
+
+      .voice-name {
+        color: #fb923c;
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.75rem;
+      }
+
+      .voice-code {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1rem;
+        text-transform: uppercase;
+      }
+
       a {
         color: #ff6b00;
       }
@@ -410,6 +502,18 @@
         }
       }
 
+      @media (min-width: 640px) {
+        .content-shell {
+          padding: 1rem 1.5rem;
+        }
+      }
+
+      @media (min-width: 768px) {
+        .voice-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
       @media (max-width: 900px) {
         .hero {
           grid-template-columns: 1fr;
@@ -433,17 +537,54 @@
           width: min(220px, 100%);
         }
       }
+
+      @media (min-width: 1024px) {
+        .content-shell {
+          padding-left: 2rem;
+          padding-right: 2rem;
+        }
+      }
+
+      @media (min-width: 1280px) {
+        .voice-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 639px) {
+        .page-title {
+          font-size: 2.25rem;
+        }
+
+        .intro-copy {
+          font-size: 1rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        .brand-card,
+        .hero-site-link,
+        .progress-fill,
+        .progress-knob {
+          animation: none;
+          transition: none;
+        }
+      }
     </style>
   </head>
   <body>
     <canvas id="shapes" aria-hidden="true"></canvas>
     <main class="page-shell">
-      <section class="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <header class="mb-8 pt-0">
+      <section class="content-shell">
+        <header class="page-header">
           <div class="hero">
             <div class="hero-copy">
               <div class="topbar">
-                <a class="brand-lockup" href="https://nuggies.website/" target="_blank" rel="noopener noreferrer">
+                <a class="brand-lockup" href="https://hangrylabs.app/" target="_blank" rel="noopener noreferrer">
                   <img class="brand-logo" src="../assets/melotts_favicon.webp" alt="Melo TTS icon">
                   <div>
                     <div class="brand-name">Hangry Labs</div>
@@ -463,131 +604,131 @@
                     <input class="volume-slider" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Volume">
                   </div>
                   <nav class="top-links" aria-label="Project links">
-                    <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="ssml.html">SSML dialogues</a>
-                    <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://hub.docker.com/r/hangrylabs/melotts/tags">Docker Hub</a>
-                    <a class="pill px-4 py-2 text-sm font-semibold no-underline" href="https://github.com/hangry-labs/MeloTTS">GitHub</a>
+                    <a class="pill top-link" href="ssml.html">SSML dialogues</a>
+                    <a class="pill top-link" href="https://hub.docker.com/r/hangrylabs/melotts/tags">Docker Hub</a>
+                    <a class="pill top-link" href="https://github.com/hangry-labs/MeloTTS">GitHub</a>
                   </nav>
                 </div>
               </div>
-              <h1 class="brand-glow max-w-4xl text-4xl font-extrabold leading-none sm:text-6xl">
+              <h1 class="brand-glow page-title">
                 Voice examples
               </h1>
-              <p class="mt-5 max-w-3xl text-base leading-7 text-[#ffb076] sm:text-lg">
+              <p class="intro-copy">
                 Easy-run text-to-speech Docker images with a browser UI and HTTP API.
                 These samples show the voices people will hear before they decide to run
                 the container or connect it to an application.
               </p>
             </div>
             <div class="hero-logo-panel" aria-hidden="true">
-              <a class="hero-logo-link" href="https://nuggies.website/" target="_blank" rel="noopener noreferrer" tabindex="-1">
+              <a class="hero-logo-link" href="https://hangrylabs.app/" target="_blank" rel="noopener noreferrer" tabindex="-1">
                 <img class="hero-logo" src="../assets/melotts_logo.webp" alt="">
               </a>
-              <a class="hero-site-link" href="https://nuggies.website/" target="_blank" rel="noopener noreferrer">nuggies.website</a>
+              <a class="hero-site-link" href="https://hangrylabs.app/" target="_blank" rel="noopener noreferrer">hangrylabs.app</a>
             </div>
           </div>
         </header>
 
-        <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Voice examples">
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English British</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-BR</span>
+        <section class="voice-grid" aria-label="Voice examples">
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English British</h2>
+              <span class="voice-code">EN-BR</span>
             </div>
             <audio preload="metadata" src="melotts-en-br.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English newest</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN_NEWEST</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English newest</h2>
+              <span class="voice-code">EN_NEWEST</span>
             </div>
             <audio preload="metadata" src="melotts-en-newest.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English v2</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN_V2</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English v2</h2>
+              <span class="voice-code">EN_V2</span>
             </div>
             <audio preload="metadata" src="melotts-en-v2.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-US</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English</h2>
+              <span class="voice-code">EN-US</span>
             </div>
             <audio preload="metadata" src="melotts-en.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English Indian</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN_INDIA</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English Indian</h2>
+              <span class="voice-code">EN_INDIA</span>
             </div>
             <audio preload="metadata" src="melotts-en-india.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English Australian</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-AU</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English Australian</h2>
+              <span class="voice-code">EN-AU</span>
             </div>
             <audio preload="metadata" src="melotts-en-au.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English American</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-US</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English American</h2>
+              <span class="voice-code">EN-US</span>
             </div>
             <audio preload="metadata" src="melotts-en-us.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">English default</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">EN-Default</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">English default</h2>
+              <span class="voice-code">EN-Default</span>
             </div>
             <audio preload="metadata" src="melotts-en-default.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">Spanish</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">ES</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">Spanish</h2>
+              <span class="voice-code">ES</span>
             </div>
             <audio preload="metadata" src="melotts-es.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">French</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">FR</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">French</h2>
+              <span class="voice-code">FR</span>
             </div>
             <audio preload="metadata" src="melotts-fr.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">Chinese</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">ZH</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">Chinese</h2>
+              <span class="voice-code">ZH</span>
             </div>
             <audio preload="metadata" src="melotts-zh.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">Japanese</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">JP</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">Japanese</h2>
+              <span class="voice-code">JP</span>
             </div>
             <audio preload="metadata" src="melotts-jp.mp3"></audio>
           </article>
 
-          <article class="brand-card p-5">
-            <div class="mb-3 flex items-center justify-between gap-3 border-b border-orange-500/20 pb-3">
-              <h2 class="text-lg font-bold text-orange-400">Korean</h2>
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">KR</span>
+          <article class="brand-card">
+            <div class="card-heading">
+              <h2 class="voice-name">Korean</h2>
+              <span class="voice-code">KR</span>
             </div>
             <audio preload="metadata" src="melotts-kr.mp3"></audio>
           </article>

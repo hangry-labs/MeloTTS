@@ -215,7 +215,7 @@ def g2p_old(text):
                 else:
                     phones.append(ph)
                     tones.append(0)
-    # todo: implement word2ph
+    # This legacy path maps one phoneme to each alignment slot.
     word2ph = [1 for i in phones]
 
     phones = [post_replace_ph(i) for i in phones]

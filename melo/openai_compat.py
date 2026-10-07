@@ -210,7 +210,7 @@ def openai_tts_request(
         )
     if payload.instructions and payload.instructions.strip():
         raise OpenAIAPIError(
-            "The instructions parameter is not supported by MeloTTS.",
+            "The instructions parameter is not supported by Melo TTS.",
             param="instructions",
             code="unsupported_parameter",
         )

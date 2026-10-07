@@ -74,6 +74,48 @@ class ProjectContractTests(unittest.TestCase):
         self.assertTrue(assets)
         self.assertEqual({path.suffix.lower() for path in assets}, {".webp"})
 
+    def test_public_pages_use_current_brand_and_local_styles(self):
+        public_files = [
+            REPO_ROOT / "README.md",
+            REPO_ROOT / "404.html",
+            REPO_ROOT / "docs" / "dockerhub.md",
+            REPO_ROOT / "examples" / "index.html",
+            REPO_ROOT / "examples" / "ssml.html",
+            REPO_ROOT / "melo" / "standalone_ui" / "static" / "index.html",
+        ]
+        content = "\n".join(path.read_text(encoding="utf-8") for path in public_files)
+
+        self.assertNotIn("Melo T T S", content)
+        self.assertNotIn("nuggies.website", content)
+        self.assertNotIn("cdn.tailwindcss.com", content)
+        self.assertNotIn("tailwind.css", content)
+        self.assertNotIn("Tailwind CSS", content)
+        self.assertIn("https://hangrylabs.app/", content)
+        self.assertFalse((REPO_ROOT / "examples" / "tailwind.css").exists())
+
+    def test_readme_uses_immutable_release_images_and_rolling_snapshot_images(self):
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        docker_commands = [
+            line for line in readme.splitlines() if line.startswith("docker run ")
+        ]
+
+        self.assertIn("hangrylabs/melotts:latest", readme)
+        self.assertIn("hangrylabs/melotts:latest_en", readme)
+        self.assertRegex(
+            readme,
+            r"hangrylabs/melotts:v0\.1\.0@sha256:[0-9a-f]{64}",
+        )
+        self.assertRegex(
+            readme,
+            r"hangrylabs/melotts:v0\.1\.0_en@sha256:[0-9a-f]{64}",
+        )
+        self.assertNotRegex(
+            readme,
+            r"hangrylabs/melotts:v0\.0\.[0-9](?:_en)?(?:\s|$)",
+        )
+        self.assertTrue(docker_commands)
+        self.assertTrue(all("\\" not in command for command in docker_commands))
+
     def test_ssml_examples_page_has_generated_audio(self):
         examples = REPO_ROOT / "examples"
         page = (examples / "ssml.html").read_text(encoding="utf-8")

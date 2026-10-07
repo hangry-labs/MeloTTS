@@ -90,7 +90,7 @@ class OpenAISpeechRequest(BaseModel):
     response_format: str = Field("mp3", description="Supported: mp3, opus, aac, flac, wav, pcm.")
     speed: float = Field(1.0, ge=0.25, le=4.0)
     instructions: str | None = Field(
-        None, description="Reserved for OpenAI compatibility; not supported by MeloTTS."
+        None, description="Reserved for OpenAI compatibility; not supported by Melo TTS."
     )
     stream_format: str = Field(
         "audio", description="Only the OpenAI audio stream format is supported."

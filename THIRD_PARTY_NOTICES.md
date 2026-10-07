@@ -61,7 +61,6 @@ copyright and unrestricted-use notice are retained at the beginning of that file
   license is retained in `melo/standalone_ui/static/vendor/wavesurfer/LICENSE`.
 - [Lucide](https://github.com/lucide-icons/lucide): ISC, with MIT-licensed Feather
   icons. Its notices are retained in `melo/standalone_ui/static/vendor/lucide/LICENSE`.
-
 ## Runtime dependencies
 
 Python packages remain under their own licenses. Their package metadata and

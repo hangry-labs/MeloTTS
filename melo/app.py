@@ -792,9 +792,9 @@ def ssml_response_headers(
 
 
 api = FastAPI(
-    title="MeloTTS API",
+    title="Melo TTS API",
     description=(
-        "OpenAI-compatible speech and native MeloTTS APIs. "
+        "OpenAI-compatible speech and native Melo TTS APIs. "
         f"Source code: [{SOURCE_CODE_URL}]({SOURCE_CODE_URL}) ({LICENSE_ID})."
     ),
     version=VERSION,

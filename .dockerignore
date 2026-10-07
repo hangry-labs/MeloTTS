@@ -9,7 +9,6 @@
 # Documentation and tests are not needed in runtime image
 /docs
 /tests
-/todo
 /.ai
 /AGENTS.md
 

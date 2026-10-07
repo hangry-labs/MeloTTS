@@ -1,10 +1,10 @@
 <p>
   <a href="https://hangry-labs.github.io/MeloTTS/examples/">
-    <img src="https://github.com/hangry-labs/MeloTTS/raw/main/assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo T T S logo">
+    <img src="https://github.com/hangry-labs/MeloTTS/raw/main/assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo TTS logo">
   </a>
 </p>
 
-# Hangry Labs Melo T T S
+# Hangry Labs Melo TTS
 
 Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
 
@@ -32,16 +32,16 @@ The examples include MP3 previews for every language plus multi-voice, multiling
 
 ## Quick Start
 
-Standard multilingual image with persistent models and settings:
+Full image with persistent models and settings:
 
 ```bash
-docker run -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
 ```
 
-EN-focused image:
+English-family image:
 
 ```bash
-docker run -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
 ```
 
 Then open:
@@ -60,7 +60,7 @@ The container includes the web UI and the HTTP API on the same port.
 - Sentence-level streaming API for applications that want earlier audio delivery
 - Native speed and variation controls plus optional pitch, tempo, volume, and loudness normalization
 - Experimental opt-in SSML for dialogue, loaded speaker/language switching, per-segment prosody, and exact pauses
-- Standard multilingual image and smaller EN-focused image
+- Full multilingual image and smaller English-family image
 - Optional Spanish and Korean packs with an explicit upstream-terms warning
 - GPU support when Docker/NVIDIA support is available
 - Offline core languages immediately; optional packs work offline after one online download
@@ -77,7 +77,7 @@ OpenAI-compatible applications can use `http://localhost:8888/v1` as their API b
 ```bash
 curl -X POST "http://localhost:8888/v1/audio/speech" ^
   -H "Content-Type: application/json" ^
-  -d "{\"model\":\"melotts\",\"input\":\"Hello from Hangry Labs Melo T T S\",\"voice\":\"EN-Newest\"}" ^
+  -d "{\"model\":\"melotts\",\"input\":\"Hello from Hangry Labs Melo TTS\",\"voice\":\"EN-Newest\"}" ^
   -o hello.mp3
 ```
 
@@ -88,7 +88,7 @@ The native API provides Melo-specific controls. Default native API behavior retu
 ```bash
 curl -X POST "http://localhost:8888/tts/generate" ^
   -H "Content-Type: application/json" ^
-  -d "{\"text\":\"Hello from Hangry Labs Melo T T S\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  -d "{\"text\":\"Hello from Hangry Labs Melo TTS\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
   -o hello.wav
 ```
 
@@ -97,7 +97,7 @@ Request MP3 when you want compact output:
 ```bash
 curl -X POST "http://localhost:8888/tts/generate" ^
   -H "Content-Type: application/json" ^
-  -d "{\"text\":\"Hello from Hangry Labs Melo T T S\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
+  -d "{\"text\":\"Hello from Hangry Labs Melo TTS\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
   -o hello.mp3
 ```
 
@@ -137,14 +137,23 @@ curl http://localhost:8888/tts/stream-formats
 
 ## Image Tags
 
-- Standard multilingual image: `latest`, `<version>`
-- EN-focused image: `latest_en`, `<version>_en`
+- Full image: `latest`, `<version>`
+- English-family image: `latest_en`, `<version>_en`
 
-Example release tags:
+Latest published release, pinned to Docker Hub's immutable top-level OCI digests:
+
+The `v0.1.0` release predates mirrored version tags on GHCR and remains available from Docker Hub.
+
+**Full image**
 
 ```bash
-docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8
-docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0@sha256:a8b9954378dbe3fc871b07a68c3f833d1f5684e92f0c789744fabb1ce08817e0
+```
+
+**English-family image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0_en@sha256:abf7dfd25fd47121cc06c1a027f6f25a6735d47e7c516324405127496a5c564b
 ```
 
 ## Links

@@ -1,14 +1,14 @@
 <p align="center">
   <a href="https://hangrylabs.app/">
-    <img src="assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo T T S logo" width="1000">
+    <img src="assets/melotts_logo_horizontal.webp" alt="Hangry Labs Melo TTS logo" width="1000">
   </a>
 </p>
 
-# Hangry Labs Melo T T S
+# Hangry Labs Melo TTS
 
 Easy-to-run, offline-friendly multilingual text to speech with a complete browser workspace and HTTP API in one Docker image.
 
-This Hangry Labs fork turns the original MeloTTS research project into a practical application for home users, developers, and production evaluation. The standard image includes English, French, Chinese, and Japanese model families for immediate offline use; the smaller English-family image contains the three English model generations. Spanish and Korean are optional one-time online downloads because their encoder terms require individual review.
+This Hangry Labs fork turns the original MeloTTS research project into a practical application for home users, developers, and production evaluation. The full image includes English, French, Chinese, and Japanese model families for immediate offline use; the smaller English-family image contains the three English model generations. Spanish and Korean are optional one-time online downloads because their encoder terms require individual review.
 
 > **Yes, you can use it.** Melo TTS is free software under AGPL-3.0. You may run
 > it at home or at work, use it commercially, keep an image offline, call its API
@@ -40,7 +40,7 @@ Official images are published on [Docker Hub](https://hub.docker.com/r/hangrylab
 
 <p align="center">
   <a href="assets/ui.webp">
-    <img src="assets/ui.webp" alt="Melo T T S browser workspace with model and output controls" width="1200">
+    <img src="assets/ui.webp" alt="Melo TTS browser workspace with model and output controls" width="1200">
   </a>
 </p>
 
@@ -73,25 +73,37 @@ Featured samples: [British English](examples/melotts-en-br.mp3), [newest English
 
 ### Current Snapshot
 
-Run the complete multilingual image with NVIDIA GPU acceleration:
+**Full image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all \
-  -v melotts_data:/app/persistent \
-  hangrylabs/melotts:latest
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
 ```
 
-Use `hangrylabs/melotts:latest_en` for the smaller image containing `EN`, `EN_V2`, and `EN_NEWEST`. Omit `--gpus all` to run on CPU, or use `--gpus "device=1"` to select a specific GPU. Keep the `melotts_data` volume mounted so optional downloads and settings survive container and image replacement.
+**English-family image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
+```
+
+The smaller English-family image contains `EN`, `EN_V2`, and `EN_NEWEST`. Omit `--gpus all` to run on CPU, or use `--gpus "device=1"` to select a specific GPU. Keep the `melotts_data` volume mounted so optional downloads and settings survive container and image replacement.
 
 Then open [http://localhost:8888](http://localhost:8888). The UI and API are served together; interactive OpenAPI documentation is available at [http://localhost:8888/tts/docs](http://localhost:8888/tts/docs).
 
 ### Stable Release
 
-Pin a release tag for repeatable deployments. Full images use `<version>` and English-family images use `<version>_en`:
+Published releases retain a readable version tag and pin Docker Hub's immutable top-level OCI digest. The digest remains authoritative if a tag is ever changed.
+The `v0.1.0` release predates mirrored version tags on GHCR and remains available from Docker Hub.
+
+**Full image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0@sha256:a8b9954378dbe3fc871b07a68c3f833d1f5684e92f0c789744fabb1ce08817e0
+```
+
+**English-family image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0_en@sha256:abf7dfd25fd47121cc06c1a027f6f25a6735d47e7c516324405127496a5c564b
 ```
 
 ---
@@ -145,7 +157,7 @@ The API defaults remain backward compatible: omitted controls are neutral, omitt
 | `volume` | `0.0` to `2.0`, default `1.0` | Optional output volume multiplier. |
 | `normalize` | boolean, default `false` | Optional EBU-style loudness normalization. |
 
-MeloTTS does not expose a trained emotion label, style token, reference-audio prompt, or direct emotional-intensity input. The stochastic controls can vary delivery, and pitch/tempo can reshape the result, but the application does not mislabel those effects as native emotion control.
+Melo TTS does not expose a trained emotion label, style token, reference-audio prompt, or direct emotional-intensity input. The stochastic controls can vary delivery, and pitch/tempo can reshape the result, but the application does not mislabel those effects as native emotion control.
 
 Neutral output-control defaults skip the extra effects pass. For local non-Docker use, FFmpeg is required for Ogg Vorbis, Opus, AAC, and whenever pitch, tempo, volume, or normalization is changed. Docker images already include it.
 
@@ -239,8 +251,8 @@ Images are published to [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts
 
 | Variant | Current tag | Release tag | Included models |
 | --- | --- | --- | --- |
-| Standard | `latest` | `<version>` | Baked: `EN`, `EN_V2`, `EN_NEWEST`, `FR`, `ZH`, `JP`; optional: `ES`, `KR` |
-| English family | `latest_en` | `<version>_en` | `EN`, `EN_V2`, `EN_NEWEST` |
+| Full | `latest` | `<version>` | Baked: `EN`, `EN_V2`, `EN_NEWEST`, `FR`, `ZH`, `JP`; optional: `ES`, `KR` |
+| English-family | `latest_en` | `<version>_en` | `EN`, `EN_V2`, `EN_NEWEST` |
 
 Both variants include the browser UI and HTTP API, pinned Python dependencies, audio tooling, and their listed baked model assets. Baked languages run without Hugging Face access. Set `TTS_LANGUAGES` to limit which baked core models load at startup.
 
@@ -272,6 +284,8 @@ task localdev
 
 ## Version History
 
+Snapshot commands intentionally follow the rolling `latest` tags. Published-release commands retain their readable version tag and also pin Docker Hub's immutable top-level OCI digest; the digest is authoritative if a tag is ever changed.
+
 ### v1.0.0 (in development)
 - Corrected the combined project license to AGPL-3.0-only, preserved inherited notices, added network-visible source offers, documented model-specific terms, and pinned audited model revisions.
 - Removed Spanish BETO and Korean `kykim` artifacts from published images; both languages now use explicit terms-aware online installation into a persistent Docker volume and work offline after that first download.
@@ -282,9 +296,9 @@ task localdev
 - Moved the Docker and package baseline to Python 3.13 and CUDA 13.0 PyTorch wheels.
 - Removed Gradio and the obsolete `cached-path` dependency branch, then regenerated the Python 3.13 lockfile from `requirements.in`.
 - Expanded rapid local iteration tasks to mount the complete `melo/`, `assets/`, and `VERSION` surface without rebuilding the image.
-- Made standard images and normal local runs default to the six clearly redistributable core model families; EN images default to `EN`, `EN_V2`, and `EN_NEWEST`.
+- Made full images and normal local runs default to the six clearly redistributable core model families; English-family images default to `EN`, `EN_V2`, and `EN_NEWEST`.
 - Consolidated Docker publication into one strict, metadata-rich pipeline for matching Docker Hub and GHCR full/English-family images.
-- Replaced legacy artwork with optimized WebP sets for Melo T T S product surfaces and Hangry Labs organization surfaces.
+- Replaced legacy artwork with optimized WebP sets for Melo TTS product surfaces and Hangry Labs organization surfaces.
 - Added structural tests for the standalone browser workspace.
 - Replaced legacy `setup.py` packaging with `pyproject.toml`; wheels now include the runtime `VERSION`, WebP artwork, standalone UI, and CLI entry points.
 - Prevented synthesis text from being written to application logs and serialized inference with model load/purge operations for predictable GPU use.
@@ -294,11 +308,26 @@ task localdev
 - Added optional pitch, tempo, volume, and loudness-normalization controls to the UI, generation API, and sentence-streaming API while keeping neutral defaults backward compatible.
 - Added explicit experimental SSML to native generation, streaming, metrics, and the browser UI. The hardened bounded parser supports loaded speaker/model routing, inherited segment prosody, substitutions, character/number/English-ordinal reading, exact breaks, multilingual dialogue, and complete-file normalization while plain text remains the default.
 - Added a dedicated SSML examples page with five reproducibly generated MP3 dialogues, exact copyable scripts, branded playback controls, and a validation task for regenerating the media through a live Melo service.
+- Standardized public branding on `Melo TTS` and `hangrylabs.app`, and removed Tailwind from the examples and 404 pages in favor of purpose-built responsive CSS.
 - Documented the distinction between native Melo synthesis controls, post-processing controls, and unsupported named-emotion conditioning.
 - Fixed case-sensitive English initialisms and mixed Chinese/English product names: uppercase terms such as `US`, `NLP`, `LLM`, `AI`, `AIGC`, and `SDXL` are now spoken as letters, while lowercase words such as `us` retain their normal pronunciation and camel-case names retain their word boundaries.
 - Fixed reproducible English cleaner errors for dropped-`g` spellings such as `chokin'` and `jokin'`, and corrected `plugin`/`plugins` to use the short vowel from `plug` instead of the `g2p-en` fallback's "ploogin" pronunciation.
 - Fixed Chinese BERT/phoneme alignment for verb-`一`-verb reduplication when Jieba assigns different parts of speech to the repeated verb, preventing duplicate `word2ph` entries and synthesis failures.
 - Reorganized the README around examples, startup, API use, images, development, project context, and release history.
+
+The current development snapshot is published through the rolling tags from `main`:
+
+**Full image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
+```
+
+**English-family image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
+```
 
 <details>
 <summary>Earlier releases</summary>
@@ -307,9 +336,23 @@ task localdev
 - Moved the active Docker runtime/build baseline from `python:3.10-slim` to `python:3.11-slim`.
 - Raised package metadata from `python_requires>=3.10` to `python_requires>=3.11`.
 - Refreshed dependency pins for the Python 3.11 line, including newer `numpy`, `pandas`, and `networkx` pins.
-- Validated the EN-focused Docker build on Python 3.11 with `task imagesmall`, `python -m pip check`, and `task localapi`.
+- Validated the English-family Docker build on Python 3.11 with `task imagesmall`, `python -m pip check`, and `task localapi`.
 - Added `POST /tts/generate` as the preferred synthesis endpoint while keeping legacy `POST /tts/convert/tts` for backward compatibility.
 - Added `POST /tts/stream` for sentence-level streaming responses plus `GET /tts/stream-formats` for discovery. The model does not emit token-level audio; streaming starts after each sentence segment is synthesized.
+
+Run this release with either image variant:
+
+**Full image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0@sha256:a8b9954378dbe3fc871b07a68c3f833d1f5684e92f0c789744fabb1ce08817e0
+```
+
+**English-family image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v0.1.0_en@sha256:abf7dfd25fd47121cc06c1a027f6f25a6735d47e7c516324405127496a5c564b
+```
 
 ### v0.0.8 (10.05.2026)
 - Scope: runtime-focused cleanup for the Docker UI/API fork.
@@ -318,21 +361,16 @@ task localdev
 - Removed stale phonemizer generation artifacts and notebook files that were not read by runtime synthesis.
 - Cleaned stale imports, unused locals, and unreachable flow-layer code found by lint checks.
 - Improved Taskfile API readiness checks by retrying transient startup errors such as `Empty reply from server`.
-- Reworked the UI into a Kokoro-style Gradio layout while keeping MeloTTS language, speaker, preset, and advanced synthesis controls.
+- Reworked the UI into a Kokoro-style Gradio layout while keeping Melo TTS language, speaker, preset, and advanced synthesis controls.
 - Added text metrics, per-language random quotes, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, favicon/brand icon, and richer API documentation links.
 - Added `/tts/status`, `/tts/defaults`, `/tts/voices`, `/tts/metrics`, and `/tts/purge` endpoints for the new UI and companion integrations.
 - Added backward-compatible optional API output formats: default WAV plus MP3, FLAC, and Ogg Vorbis via `format`, with discovery at `/tts/formats`.
 - Added an output format selector to the Gradio UI; the UI defaults to MP3 while the API remains WAV-by-default for old clients.
 - Modernized the runtime dependency stack using `requirements.in` + resolved pins in `requirements.txt`; key validated versions include `gradio==6.14.0`, `fastapi==0.136.1`, `starlette==1.0.0`, `pydantic==2.13.4`, `torch==2.11.0`, `torchaudio==2.11.0`, `transformers==5.8.0`, `numpy==2.2.6`, and `soundfile==0.13.1`.
 - Normalized package metadata versioning in `setup.py` so display versions like `v0.0.8-SNAPSHOT` install as valid Python package versions such as `0.0.8.dev0`.
-- Added `task release` backed by the root snapshot `VERSION` file, and corrected Docker release tags so the full image publishes as `<version>` while the EN-focused image publishes as `<version>_en`.
+- Added `task release` backed by the root snapshot `VERSION` file, and corrected Docker release tags so the full image publishes as `<version>` while the English-family image publishes as `<version>_en`.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
-  ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8_en
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.8
-  docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts:v0.0.8_en
-  ```
 
 
 ### v0.0.7 (29.03.2026)
@@ -350,23 +388,12 @@ task localdev
   - NLTK resources required for EN synthesis (including `averaged_perceptron_tagger_eng` and `cmudict`) are preloaded during image build for offline-ready runs.
 - Fixed Gradio 4.x UI regressions after upgrades (language/speaker loading + synth output compatibility) while keeping API behavior stable.
 - Split Docker release flow into EN and FULL image tracks/workflows (`<version>_en`, `<version>`) to improve build/release flexibility.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.7_en
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.7
-  docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts:v0.0.7_en
-  ```
-  https://hub.docker.com/r/hangrylabs/melotts
 
 ### v0.0.6 (27.03.2026)
 - Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).
 - Added working RTX 50-series (`sm_120`) support in the Docker setup.
 - Added GPU selection support for Docker runs, so you can choose which GPU to use.
 - Improved build resilience for model preloading during Docker image creation.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.6
-  ```
 
 ### v0.0.5 (27.03.2026)
 - Added more English model options (including V2 and V3 variants).
@@ -375,20 +402,12 @@ task localdev
 - Added memory management in UI (`Purge others`) to release non-selected language models.
 - Improved API documentation visibility directly inside the app (`/` -> API Docs tab + `/tts/docs`).
 - Updated release planning: V2/V3 scope completed; deferred separate base-repo split plan.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.5
-  ```
 
 ### v0.0.4 (09.08.2025)
 - **Dependency updates** for improved performance and stability.
 - **Full offline support** — all required models are now baked into the image.
 - **Model overwrite option**: set `MELOTTTS_MODELS` to point to your custom model folder.
 - **Smaller image size** via optimized multi-stage Docker build.
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.4
-  ```
 
 ### v0.0.3 (25.07.2025)
 - Optimized docker build to use layer caching so we can build stuff fast after the initial build
@@ -397,10 +416,6 @@ task localdev
 - Expanded API with sdp_ratio, noise_scale and noise_scale_w
 - Corrected faulty version dates
 - Updated documentation
-- Run with:
-  ```bash
-  docker run -p 8888:8888 --gpus all hangrylabs/melotts:v0.0.3
-  ```
 
 ### v0.0.2 (22.06.2025)
 - Enable API calls together with UI

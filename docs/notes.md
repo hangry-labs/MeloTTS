@@ -1,4 +1,4 @@
-# Hangry Labs Melo T T S Development Notes
+# Hangry Labs Melo TTS Development Notes
 
 Main project links:
 
@@ -44,8 +44,10 @@ modified network service must prominently offer that source to its users.
     winget install --id=astral-sh.uv -e
 
 ## Version Management
-`git tag v0.0.2`  
-`git push origin v0.0.2`
+
+Do not create release tags by hand. Root `VERSION` is authoritative. Preview the
+complete version and documentation transition with `task release DRY_RUN=1`, then
+follow the [Release](#release) procedure after the candidate has been reviewed.
 
 ## Docker Usage
 ### CPU Version
@@ -324,7 +326,10 @@ Root `VERSION` is the release source of truth. A standard patch release can be p
 
     task release
 
-The task reads the version directly from `VERSION`. It requires a snapshot such as `v1.0.0-SNAPSHOT`, validates the project, commits `VERSION=v1.0.0`, creates annotated tag `v1.0.0`, then commits the next patch snapshot such as `v1.0.1-SNAPSHOT`.
+The task reads the version directly from `VERSION`. It requires a snapshot such as
+`v1.0.0-SNAPSHOT`, validates the project, commits `VERSION=v1.0.0`, creates annotated
+tag `v1.0.0`, then commits the next patch snapshot such as `v1.0.1-SNAPSHOT` and its
+new README development heading.
 
 Preview the release without changing files, creating commits, building an image, or making a tag:
 
@@ -338,7 +343,9 @@ Skip the release validation only when the exact candidate image and checks were 
 
     task release SKIP_VALIDATION=1
 
-The release task allows untracked local `todo/` files so private notes can stay visible locally. It fails if anything in `todo/` is staged or tracked, because `todo/` is not meant to be released.
+Private agent memory stays under the locally ignored `.ai/` directory and root
+`AGENTS.md`. The release task refuses to proceed if either path is tracked and
+requires every public repository file to be clean.
 
 Publish the prepared release with:
 
@@ -347,3 +354,17 @@ Publish the prepared release with:
 This pushes the release tag first so GitHub Actions runs the tag build, then pushes `main` with the next `-SNAPSHOT` version.
 
 The unified `.github/workflows/docker-build.yml` workflow publishes the full and English-family tags to both Docker Hub and GitHub Container Registry. Model preloading is strict: a missing model fails the build instead of publishing an incomplete image.
+
+After both release images publish, inspect each readable tag and copy the first
+`Digest:` value, which is the top-level OCI index digest:
+
+    docker buildx imagetools inspect hangrylabs/melotts:v1.0.0
+    docker buildx imagetools inspect hangrylabs/melotts:v1.0.0_en
+    docker buildx imagetools inspect ghcr.io/hangry-labs/melotts:v1.0.0
+    docker buildx imagetools inspect ghcr.io/hangry-labs/melotts:v1.0.0_en
+
+The Docker Hub and GHCR digest for each variant must match. Update the completed
+release commands in `README.md` and `docs/dockerhub.md` to use
+`<tag>@sha256:<top-level-digest>`. Do not use a platform child-manifest or
+attestation digest. Keep rolling `latest` and `latest_en` snapshot commands
+unpinned.

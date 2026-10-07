@@ -1,6 +1,4 @@
 """Set of default text cleaners"""
-# TODO: pick the cleaner for languages dynamically
-
 import re
 from .french_abbreviations import abbreviations_fr
 

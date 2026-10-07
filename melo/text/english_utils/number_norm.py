@@ -63,7 +63,6 @@ def _expand_currency(m: "re.Match") -> str:
             2: "pounds sterling",
         },
         "¥": {
-            # TODO rin
             0.02: "sen",
             2: "yen",
         },
