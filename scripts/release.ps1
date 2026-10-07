@@ -44,9 +44,11 @@ function Update-PackageVersion {
         [string]$DisplayVersion
     )
     $packageVersion = Convert-ToPackageVersion $DisplayVersion
-    $updated = [regex]::Replace(
+    $versionPattern = [regex]::new(
+        '(?m)^version = "[^"]+"$'
+    )
+    $updated = $versionPattern.Replace(
         $Text,
-        '(?m)^version = "[^"]+"$',
         "version = `"$packageVersion`"",
         1
     )
@@ -54,6 +56,25 @@ function Update-PackageVersion {
         throw "Unable to update project.version in pyproject.toml."
     }
     return $updated
+}
+
+function Assert-PackageDocument {
+    param(
+        [string]$Text,
+        [string]$DisplayVersion,
+        [string]$Label
+    )
+    $expectedVersion = Convert-ToPackageVersion $DisplayVersion
+    $versionMatches = [regex]::Matches($Text, '(?m)^version = "([^"]+)"$')
+    if ($versionMatches.Count -ne 1) {
+        throw "$Label must contain exactly one lowercase project.version assignment. Found $($versionMatches.Count)."
+    }
+    if ($versionMatches[0].Groups[1].Value -ne $expectedVersion) {
+        throw "$Label project.version '$($versionMatches[0].Groups[1].Value)' does not match '$expectedVersion'."
+    }
+    if (-not [regex]::IsMatch($Text, '(?m)^VERSION = "VERSION"$')) {
+        throw "$Label lost the wheel force-include mapping VERSION = `"VERSION`"."
+    }
 }
 
 function Update-DockerImageTags {
@@ -257,6 +278,8 @@ try {
     $releaseDockerHub = Get-ReleaseDockerHub $dockerHubSource $releaseVersion
     $nextProject = Update-PackageVersion $releaseProject $nextSnapshotVersion
     $nextReadme = Get-NextSnapshotReadme $releaseReadme $releaseVersion $nextSnapshotVersion
+    Assert-PackageDocument $releaseProject $releaseVersion "Release pyproject.toml"
+    Assert-PackageDocument $nextProject $nextSnapshotVersion "Next-snapshot pyproject.toml"
 
     Write-Host "Release version: $releaseVersion"
     Write-Host "Next snapshot:   $nextSnapshotVersion"
