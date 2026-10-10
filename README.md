@@ -297,6 +297,22 @@ task localdev
 
 Snapshot commands intentionally follow the rolling `latest` tags. Published-release commands retain their readable version tag and also pin Docker Hub's immutable top-level OCI digest; the digest is authoritative if a tag is ever changed.
 
+### v1.0.2 (in development)
+
+The current development snapshot is published through the rolling tags from `main`:
+
+**Full image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
+```
+
+**English-family image**
+
+```bash
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
+```
+
 ### v1.0.1
 
 Run this release with either image variant:

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "melotts"
-version = "1.0.1"
+version = "1.0.2.dev0"
 description = "Easy-to-run, offline text-to-speech powered by Melo TTS"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
