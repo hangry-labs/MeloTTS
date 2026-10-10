@@ -70,6 +70,8 @@ class StandaloneUiTests(unittest.TestCase):
         self.assertIn('src="/assets/melotts_logo_horizontal.webp"', index.text)
         self.assertIn('href="/assets/melotts_favicon.webp"', index.text)
         self.assertIn('src="/assets/hangrylabs_logo.webp"', index.text)
+        self.assertIn('href="mailto:contact@hangrylabs.app"', index.text)
+        self.assertIn('class="brand-contact"', index.text)
         self.assertIn('<span data-i18n="nav.source">Source</span>', index.text)
         self.assertIn('data-i18n-title="nav.sourceTitle"', index.text)
         self.assertIn("https://hangry-labs.github.io/MeloTTS/examples/?lang=en", index.text)
