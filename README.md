@@ -108,13 +108,13 @@ The `v0.1.0` release predates mirrored version tags on GHCR and remains availabl
 **Full image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1
 ```
 
 **English-family image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1_en
 ```
 
 ---
@@ -297,20 +297,20 @@ task localdev
 
 Snapshot commands intentionally follow the rolling `latest` tags. Published-release commands retain their readable version tag and also pin Docker Hub's immutable top-level OCI digest; the digest is authoritative if a tag is ever changed.
 
-### v1.0.1 (in development)
+### v1.0.1
 
-The current development snapshot is published through the rolling tags from `main`:
+Run this release with either image variant:
 
 **Full image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1
 ```
 
 **English-family image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1_en
 ```
 
 - Fixed offline synthesis for every baked core language by loading pinned tokenizer snapshots directly from the image cache, avoiding an unintended Hugging Face metadata request while preserving online installation for optional Spanish and Korean packs.
