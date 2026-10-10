@@ -157,13 +157,13 @@ The `v0.1.0` release predates mirrored version tags on GHCR and remains availabl
 **Full image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1@sha256:f0da2ebce41283a5d2dae7125d4776522f95995abdad80773eb2b200fdd1292b
 ```
 
 **English-family image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.1_en@sha256:870488904a21cf2e128d80230371270b19dd2a4ea84d70f5505a84afe1bb642f
 ```
 
 ## Links
