@@ -49,3 +49,24 @@ def bert_revision_kwargs(model_id: str) -> dict[str, str | bool]:
     if revision:
         options["revision"] = revision
     return options
+
+
+def load_bert_tokenizer(model_id: str):
+    """Load a pinned tokenizer without remote metadata calls in local-only mode."""
+    from transformers import AutoTokenizer
+
+    options = bert_revision_kwargs(model_id)
+    source = model_id
+    if options["local_files_only"]:
+        from huggingface_hub import snapshot_download
+
+        source = snapshot_download(
+            repo_id=model_id,
+            revision=BERT_MODEL_REVISIONS.get(model_id),
+            local_files_only=True,
+        )
+        options.pop("revision", None)
+        # Transformers 4.57 otherwise probes the Hub to detect Mistral tokenizers.
+        options["fix_mistral_regex"] = False
+
+    return AutoTokenizer.from_pretrained(source, **options)

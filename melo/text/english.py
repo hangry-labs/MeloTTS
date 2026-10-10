@@ -3,9 +3,8 @@ import pickle
 import re
 
 from g2p_en import G2p
-from transformers import AutoTokenizer
 
-from melo.model_registry import bert_revision_kwargs
+from melo.model_registry import load_bert_tokenizer
 
 from . import symbols
 from .english_utils.abbreviations import expand_abbreviations
@@ -194,7 +193,7 @@ def text_normalize(text):
     return text
 
 model_id = 'bert-base-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
+tokenizer = load_bert_tokenizer(model_id)
 def g2p_old(text):
     phones = []
     tones = []

@@ -2,9 +2,8 @@ import os
 import re
 
 from pypinyin import Style, lazy_pinyin
-from transformers import AutoTokenizer
 
-from melo.model_registry import bert_revision_kwargs
+from melo.model_registry import load_bert_tokenizer
 
 # from text.symbols import punctuation
 from .chinese_numbers import normalize_chinese_numbers
@@ -100,7 +99,7 @@ def _get_initials_finals(word):
     return initials, finals
 
 model_id = 'bert-base-multilingual-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
+tokenizer = load_bert_tokenizer(model_id)
 def _g2p(segments):
     phones_list = []
     tones_list = []

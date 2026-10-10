@@ -313,6 +313,8 @@ docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangryla
 docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:latest_en
 ```
 
+- Fixed offline synthesis for every baked core language by loading pinned tokenizer snapshots directly from the image cache, avoiding an unintended Hugging Face metadata request while preserving online installation for optional Spanish and Korean packs.
+
 ### v1.0.0
 - Corrected the combined project license to AGPL-3.0-only, preserved inherited notices, added network-visible source offers, documented model-specific terms, and pinned audited model revisions.
 - Removed Spanish BETO and Korean `kykim` artifacts from published images; both languages now use explicit terms-aware online installation into a persistent Docker volume and work offline after that first download.

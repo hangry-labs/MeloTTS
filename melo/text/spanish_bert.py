@@ -1,12 +1,12 @@
 import sys
 
 import torch
-from transformers import AutoModelForMaskedLM, AutoTokenizer
+from transformers import AutoModelForMaskedLM
 
-from melo.model_registry import bert_revision_kwargs
+from melo.model_registry import bert_revision_kwargs, load_bert_tokenizer
 
 model_id = 'dccuchile/bert-base-spanish-wwm-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_id, **bert_revision_kwargs(model_id))
+tokenizer = load_bert_tokenizer(model_id)
 model = None
 
 def get_bert_feature(text, word2ph, device=None):
