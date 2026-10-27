@@ -365,13 +365,13 @@ Run this release with either image variant:
 **Full image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0@sha256:e430a9443c5de7479f814ee8c2fdd8a8683e707c19cffc25425d7cce93cb6e3c
 ```
 
 **English-family image**
 
 ```bash
-docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0_en
+docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0_en@sha256:15d48aa0e48ca2aeea31cf08aa0872ad10899cdc571dd9891d7c7929ddab0025
 ```
 
 <details>

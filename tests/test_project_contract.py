@@ -98,6 +98,11 @@ class ProjectContractTests(unittest.TestCase):
         docker_commands = [
             line for line in readme.splitlines() if line.startswith("docker run ")
         ]
+        release_commands = [
+            command
+            for command in docker_commands
+            if "hangrylabs/melotts:v" in command
+        ]
 
         self.assertIn("hangrylabs/melotts:latest", readme)
         self.assertIn("hangrylabs/melotts:latest_en", readme)
@@ -114,6 +119,13 @@ class ProjectContractTests(unittest.TestCase):
             r"hangrylabs/melotts:v0\.0\.[0-9](?:_en)?(?:\s|$)",
         )
         self.assertTrue(docker_commands)
+        self.assertTrue(release_commands)
+        for command in release_commands:
+            self.assertRegex(
+                command,
+                r"hangrylabs/melotts:v\d+\.\d+\.\d+(?:_en)?"
+                r"@sha256:[0-9a-f]{64}(?:\s|$)",
+            )
         self.assertTrue(all("\\" not in command for command in docker_commands))
 
     def test_ssml_examples_page_has_generated_audio(self):
