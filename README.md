@@ -306,6 +306,8 @@ Snapshot commands intentionally follow the rolling `latest` tags. Published-rele
 
 ### v1.0.2 (in development)
 
+- Remove redundant Korean character-filter ranges and validate FFmpeg filter
+  controls as finite numbers before starting audio processing.
 - Update vulnerable Python dependencies, including PyTorch, Transformers, NLTK,
   certifi, filelock, and setuptools. Use SciPy for SSML resampling so the runtime
   can use the patched PyTorch version without a TorchAudio version dependency.

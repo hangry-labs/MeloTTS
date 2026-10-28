@@ -69,6 +69,38 @@ class AudioEffectsTests(unittest.TestCase):
         self.assertEqual(atempo_filters(4), ["atempo=2.0", "atempo=2.000000"])
         self.assertEqual(atempo_filters(0.25), ["atempo=0.5", "atempo=0.500000"])
 
+    def test_atempo_rejects_nonpositive_and_nonfinite_multipliers(self):
+        for multiplier in (0, -1, float("nan"), float("inf"), float("-inf")):
+            with self.subTest(multiplier=multiplier), self.assertRaises(ValueError):
+                atempo_filters(multiplier)
+
+    def test_filter_controls_are_canonical_numeric_values(self):
+        filters = build_audio_effect_filters(
+            22050, pitch_semitones="2", tempo="1.25", volume="0.75"
+        )
+
+        self.assertIn("atempo=1.250000", filters)
+        self.assertIn("volume=0.750000", filters)
+        self.assertTrue(filters[0].startswith("asetrate="))
+
+    @patch("melo.audio._run_ffmpeg")
+    def test_invalid_filter_controls_never_start_ffmpeg(self, run_ffmpeg):
+        invalid_values = (
+            "1; echo unexpected",
+            "1,amovie=unexpected",
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+        )
+        for field in ("pitch_semitones", "tempo", "volume"):
+            for value in invalid_values:
+                with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    apply_audio_effects(
+                        np.zeros(16, dtype=np.float32), 22050, **{field: value}
+                    )
+
+        run_ffmpeg.assert_not_called()
+
     def test_ssml_compaction_only_trims_requested_edges_and_adds_exact_handoff(self):
         sample_rate = 1000
         audio = np.concatenate(

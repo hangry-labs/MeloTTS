@@ -112,9 +112,19 @@ def audio_effects_enabled(
     )
 
 
+def _finite_float(value, name):
+    """Canonicalize filter controls even when callers bypass the HTTP schemas."""
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{name} must be finite")
+    return number
+
+
 def atempo_filters(multiplier):
     filters = []
-    current = multiplier
+    current = _finite_float(multiplier, "tempo")
+    if current <= 0:
+        raise ValueError("tempo must be positive")
     while current > 2.0:
         filters.append("atempo=2.0")
         current /= 2.0
@@ -132,6 +142,9 @@ def build_audio_effect_filters(
     volume=1.0,
     normalize=False,
 ):
+    pitch_semitones = _finite_float(pitch_semitones, "pitch_semitones")
+    tempo = _finite_float(tempo, "tempo")
+    volume = _finite_float(volume, "volume")
     filters = []
     if abs(pitch_semitones) > 0.001:
         pitch_factor = 2 ** (pitch_semitones / 12)
@@ -167,16 +180,14 @@ def apply_audio_effects(
     normalize=False,
 ):
     audio = np.asarray(audio, dtype=np.float32)
-    if audio.size == 0 or not audio_effects_enabled(
-        pitch_semitones, tempo, volume, normalize
-    ):
+    filters = build_audio_effect_filters(
+        sample_rate, pitch_semitones, tempo, volume, normalize
+    )
+    if audio.size == 0 or not filters:
         return audio
 
     source = io.BytesIO()
     sf.write(source, audio, sample_rate, format="WAV", subtype="PCM_16")
-    filters = build_audio_effect_filters(
-        sample_rate, pitch_semitones, tempo, volume, normalize
-    )
     command = [
         "ffmpeg",
         "-hide_banner",

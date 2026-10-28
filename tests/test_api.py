@@ -200,6 +200,19 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 422)
 
+    @patch("melo.audio._run_ffmpeg")
+    def test_command_like_and_nonfinite_controls_are_rejected(self, run_ffmpeg):
+        for route in ("/tts/generate", "/tts/convert/tts"):
+            for field in ("pitch_semitones", "tempo", "volume"):
+                for value in ("1; echo unexpected", "1,amovie=unexpected", "nan", "inf"):
+                    with self.subTest(route=route, field=field, value=value):
+                        response = self.client.post(
+                            route, json=self.request_body(**{field: value})
+                        )
+                        self.assertEqual(response.status_code, 422)
+
+        run_ffmpeg.assert_not_called()
+
     def test_validation_logs_do_not_include_request_text(self):
         private_text = "do-not-log-this-validation-payload"
         with self.assertLogs("TTSApp", level="WARNING") as captured:
