@@ -18,7 +18,7 @@ COPY requirements.txt .
 # Install Python dependencies before adding the verified UniDic archive below.
 RUN pip install --upgrade pip setuptools wheel
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu130
-ARG TORCH_PACKAGES="torch==2.11.0+cu130 torchaudio==2.11.0+cu130"
+ARG TORCH_PACKAGES="torch==2.13.0+cu130"
 RUN pip install --extra-index-url ${TORCH_INDEX_URL} -r requirements.txt
 RUN pip install --index-url ${TORCH_INDEX_URL} ${TORCH_PACKAGES}
 ARG UNIDIC_VERSION=3.1.0+2021-08-31

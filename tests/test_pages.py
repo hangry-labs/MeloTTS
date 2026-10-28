@@ -1,11 +1,11 @@
 """Public-source staging must not copy ignored files or follow outside links."""
-from contextlib import redirect_stdout
 import io
-from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
 from unittest.mock import patch
 
 try:

@@ -15,12 +15,33 @@ from melo.audio import (
     encode_audio_bytes,
     encode_mp3_stream,
     get_supported_output_formats,
+    resample_audio,
     trim_silent_audio_edges,
     write_audio_file,
 )
 
 
 class AudioEffectsTests(unittest.TestCase):
+    def test_resampling_preserves_duration_and_tone(self):
+        for source_rate, target_rate in ((44100, 22050), (22050, 44100), (48000, 44100)):
+            with self.subTest(source_rate=source_rate, target_rate=target_rate):
+                time = np.arange(source_rate // 5) / source_rate
+                audio = (0.5 * np.sin(2 * np.pi * 1000 * time)).astype(np.float32)
+
+                result = resample_audio(audio, source_rate, target_rate)
+
+                self.assertEqual(result.dtype, np.float32)
+                self.assertEqual(len(result), target_rate // 5)
+                spectrum = np.abs(np.fft.rfft(result))
+                peak_hz = np.argmax(spectrum) * target_rate / len(result)
+                self.assertAlmostEqual(peak_hz, 1000, delta=5)
+                self.assertAlmostEqual(float(np.sqrt(np.mean(result**2))), 0.5 / 2**0.5, places=2)
+
+    def test_resampling_skips_empty_and_matching_rate_audio(self):
+        audio = np.array([0.0, 0.25, -0.25], dtype=np.float32)
+        self.assertIs(resample_audio(audio, 44100, 44100), audio)
+        self.assertEqual(resample_audio(np.array([], dtype=np.float32), 22050, 44100).size, 0)
+
     def test_neutral_controls_skip_processing(self):
         audio = np.array([0.0, 0.25, -0.25], dtype=np.float32)
 

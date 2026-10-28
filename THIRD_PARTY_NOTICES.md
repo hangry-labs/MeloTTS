@@ -70,6 +70,8 @@ Docker image. Notable copyleft or separately licensed runtime components include
 - `pykakasi`: GPL-3.0-or-later.
 - `distance`: GPL-2.0-or-later, as declared by its distributed package license.
 - `num2words`: LGPL.
+- [SciPy](https://scipy.org/): BSD-3-Clause. Its license and bundled binary
+  dependency notices are retained in its installed `.dist-info` directory.
 - FFmpeg and its Debian libraries: the Debian build declares GPL-3.0-or-later as
   its effective license. Its licenses and source-package notices are retained
   under `/usr/share/doc` in the image.

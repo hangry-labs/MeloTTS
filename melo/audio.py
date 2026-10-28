@@ -1,4 +1,5 @@
 import io
+import math
 import os
 import shutil
 import subprocess
@@ -206,11 +207,12 @@ def resample_audio(audio, source_rate, target_rate):
     audio = np.asarray(audio, dtype=np.float32)
     if audio.size == 0 or source_rate == target_rate:
         return audio
-    import torch
-    from torchaudio.functional import resample
+    from scipy.signal import resample_poly
 
-    waveform = torch.from_numpy(audio)
-    return resample(waveform, source_rate, target_rate).numpy().astype(np.float32, copy=False)
+    divisor = math.gcd(source_rate, target_rate)
+    return resample_poly(audio, target_rate // divisor, source_rate // divisor).astype(
+        np.float32, copy=False
+    )
 
 
 def trim_silent_audio_edges(

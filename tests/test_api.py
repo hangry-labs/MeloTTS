@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 os.environ["MELOTTS_EAGER_LOAD"] = "0"
 
 torch_stub = types.ModuleType("torch")
+torch_stub.Tensor = type("Tensor", (), {})
 torch_stub.cuda = SimpleNamespace(
     is_available=lambda: False,
     device_count=lambda: 0,

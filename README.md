@@ -306,6 +306,9 @@ Snapshot commands intentionally follow the rolling `latest` tags. Published-rele
 
 ### v1.0.2 (in development)
 
+- Update vulnerable Python dependencies, including PyTorch, Transformers, NLTK,
+  certifi, filelock, and setuptools. Use SciPy for SSML resampling so the runtime
+  can use the patched PyTorch version without a TorchAudio version dependency.
 - Add a multilingual README-based project website with shared navigation,
   the voice gallery and SSML dialogue showcase.
 

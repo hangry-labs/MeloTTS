@@ -317,7 +317,7 @@ version in `pyproject.toml` automatically (`v1.0.0-SNAPSHOT` becomes `1.0.0.dev0
 Print key runtime versions:
 
 ```bash
-docker exec melotts_local python -c "import fastapi, starlette, pydantic, torch, torchaudio, transformers, numpy, soundfile; print('fastapi', fastapi.__version__); print('starlette', starlette.__version__); print('pydantic', pydantic.__version__); print('torch', torch.__version__); print('torchaudio', torchaudio.__version__); print('transformers', transformers.__version__); print('numpy', numpy.__version__); print('soundfile', soundfile.__version__)"
+docker exec melotts_local python -c "import fastapi, starlette, pydantic, torch, scipy, transformers, numpy, soundfile; print('fastapi', fastapi.__version__); print('starlette', starlette.__version__); print('pydantic', pydantic.__version__); print('torch', torch.__version__); print('scipy', scipy.__version__); print('transformers', transformers.__version__); print('numpy', numpy.__version__); print('soundfile', soundfile.__version__)"
 ```
 
 ## Release
