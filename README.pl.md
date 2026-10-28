@@ -13,6 +13,8 @@
   <a href="README.es.md">Español</a>
 </p>
 
+<p align="center"><a href="https://hangry-labs.github.io/MeloTTS/examples/?lang=pl"><strong>🎧 Posłuchaj przykładów głosów</strong></a></p>
+
 # Hangry Labs Melo TTS
 
 Łatwy do uruchomienia, wielojęzyczny system zamiany tekstu na mowę, przystosowany do pracy offline, z interfejsem przeglądarkowym i API HTTP w jednym obrazie Docker.

@@ -13,6 +13,8 @@
   <strong>Español</strong>
 </p>
 
+<p align="center"><a href="https://hangry-labs.github.io/MeloTTS/examples/?lang=es"><strong>🎧 Escuchar ejemplos de voces</strong></a></p>
+
 # Hangry Labs Melo TTS
 
 Texto a voz multilingüe fácil de ejecutar, preparado para uso sin conexión, con interfaz web y API HTTP en una sola imagen Docker.

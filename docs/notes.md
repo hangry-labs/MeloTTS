@@ -39,7 +39,7 @@ terms are recorded in `THIRD_PARTY_NOTICES.md`. AGPL permits private and commerc
 use. Modified versions distributed to others require corresponding source, and a
 modified network service must prominently offer that source to its users.
 
-##Tools
+## Tools
 
     winget install --id=astral-sh.uv -e
 
@@ -66,7 +66,7 @@ effects pass. The Docker images already include FFmpeg.
 You need docker to be working. (Example : Docker Desktop)  
 `task image`
 
-Local task builds first check the LAN UniDic mirror at `http://192.168.0.54:5080`. If it is unavailable, the build automatically uses the checksum-verified public source. A plain `docker build -t melotts:test .` always uses the portable public default. GitHub Actions stores the same verified archive in its own build cache.
+Local task builds can use a configured UniDic mirror. If it is unavailable, the build automatically uses the checksum-verified public source. A plain `docker build -t melotts:test .` always uses the portable public default. GitHub Actions stores the same verified archive in its own build cache.
 
 ### Run image  
 `docker run -p 8888:8888 --gpus all -v melotts_data:/app/persistent melotts:test`
@@ -343,9 +343,7 @@ Skip the release validation only when the exact candidate image and checks were 
 
     task release SKIP_VALIDATION=1
 
-Private agent memory stays under the locally ignored `.ai/` directory and root
-`AGENTS.md`. The release task refuses to proceed if either path is tracked and
-requires every public repository file to be clean.
+The release task requires a clean public working tree.
 
 Publish the prepared release with:
 

@@ -13,6 +13,8 @@
   <a href="README.es.md">Español</a>
 </p>
 
+<p align="center"><a href="https://hangry-labs.github.io/MeloTTS/examples/?lang=ja"><strong>🎧 音声サンプルを聴く</strong></a></p>
+
 # Hangry Labs Melo TTS
 
 ブラウザー UI と HTTP API を 1 つの Docker イメージにまとめた、簡単に実行できるオフライン対応の多言語テキスト読み上げです。

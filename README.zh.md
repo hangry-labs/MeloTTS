@@ -13,6 +13,8 @@
   <a href="README.es.md">Español</a>
 </p>
 
+<p align="center"><a href="https://hangry-labs.github.io/MeloTTS/examples/?lang=zh"><strong>🎧 收听语音示例</strong></a></p>
+
 # Hangry Labs Melo TTS
 
 易于运行、适合离线使用的多语言文本转语音工具，在一个 Docker 镜像中同时提供浏览器界面和 HTTP API。

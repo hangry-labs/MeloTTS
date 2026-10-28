@@ -13,6 +13,8 @@
   <a href="README.es.md">Español</a>
 </p>
 
+<p align="center"><a href="https://hangry-labs.github.io/MeloTTS/examples/?lang=nb"><strong>🎧 Lytt til stemmeeksempler</strong></a></p>
+
 # Hangry Labs Melo TTS
 
 Flerspråklig tekst-til-tale som er enkel å kjøre og egnet for frakoblet bruk, med nettlesergrensesnitt og HTTP-API i ett Docker-bilde.

@@ -13,6 +13,8 @@
   <a href="README.es.md">Español</a>
 </p>
 
+<p align="center"><a href="https://hangry-labs.github.io/MeloTTS/examples/?lang=en"><strong>🎧 Listen to voice examples</strong></a></p>
+
 # Hangry Labs Melo TTS
 
 Easy-to-run, offline-friendly multilingual text to speech with a complete browser workspace and HTTP API in one Docker image.
@@ -57,7 +59,7 @@ Product overview and guided installation: [hangrylabs.app/software/melotts](http
 
 Featured samples: [British English](examples/melotts-en-br.mp3), [newest English model](examples/melotts-en-newest.mp3), [Spanish](examples/melotts-es.mp3), [French](examples/melotts-fr.mp3), [Chinese](examples/melotts-zh.mp3), [Japanese](examples/melotts-jp.mp3), and [Korean](examples/melotts-kr.mp3).
 
-<details>
+<details markdown="1">
 <summary>All direct MP3 links</summary>
 
 | Language or model | Sample |
@@ -121,7 +123,7 @@ docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangryla
 
 ## API Usage
 
-<details>
+<details markdown="1">
 <summary>OpenAI-compatible and native APIs, controls, streaming, and discovery</summary>
 
 ### OpenAI-Compatible API
@@ -255,7 +257,7 @@ CPU execution is supported. NVIDIA CUDA is currently the only officially support
 
 ## Docker Images
 
-<details>
+<details markdown="1">
 <summary>Registries, variants, and offline behavior</summary>
 
 Images are published to [Docker Hub](https://hub.docker.com/r/hangrylabs/melotts/tags) and [GHCR](https://github.com/hangry-labs/MeloTTS/pkgs/container/melotts).
@@ -275,7 +277,12 @@ Spanish and Korean remain supported but are not distributed in either image. Ope
 
 ## Local Development
 
-<details>
+Preview the project website with `task pages`, build it with `task pages-build`,
+or check public staging and language routing with `task pages-test`. See the
+[website guide](site/README.md). These tasks use a separate lightweight builder
+and do not load speech models.
+
+<details markdown="1">
 <summary>Validation and Docker workflows</summary>
 
 This repository targets Python 3.13. Install [Task](https://taskfile.dev/) and `uv`, then use the repository workflows:
@@ -298,6 +305,9 @@ task localdev
 Snapshot commands intentionally follow the rolling `latest` tags. Published-release commands retain their readable version tag and also pin Docker Hub's immutable top-level OCI digest; the digest is authoritative if a tag is ever changed.
 
 ### v1.0.2 (in development)
+
+- Add a multilingual README-based project website with shared navigation,
+  the voice gallery and SSML dialogue showcase.
 
 The current development snapshot is published through the rolling tags from `main`:
 
@@ -349,7 +359,7 @@ docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangryla
 - Prevented synthesis text from being written to application logs and serialized inference with model load/purge operations for predictable GPU use.
 - Fixed CLI speaker selection for every English model family instead of assuming `EN-Default` exists.
 - Added API, CLI, package-contract, and wheel-content tests plus standard `doctor`, `deps`, `lint`, `test`, `package`, and `validate` Taskfile workflows.
-- Regenerated the deployment lock for Linux/Python 3.13 and tightened Docker build context exclusions for tests and private agent files.
+- Regenerated the deployment lock for Linux/Python 3.13 and tightened Docker build context exclusions for tests and local workspace files.
 - Added optional pitch, tempo, volume, and loudness-normalization controls to the UI, generation API, and sentence-streaming API while keeping neutral defaults backward compatible.
 - Added explicit experimental SSML to native generation, streaming, metrics, and the browser UI. The hardened bounded parser supports loaded speaker/model routing, inherited segment prosody, substitutions, character/number/English-ordinal reading, exact breaks, multilingual dialogue, and complete-file normalization while plain text remains the default.
 - Added a dedicated SSML examples page with five reproducibly generated MP3 dialogues, exact copyable scripts, branded playback controls, and a validation task for regenerating the media through a live Melo service.
@@ -374,7 +384,7 @@ docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangryla
 docker run --rm -p 8888:8888 --gpus all -v melotts_data:/app/persistent hangrylabs/melotts:v1.0.0_en@sha256:15d48aa0e48ca2aeea31cf08aa0872ad10899cdc571dd9891d7c7929ddab0025
 ```
 
-<details>
+<details markdown="1">
 <summary>Earlier releases</summary>
 
 ### v0.1.0 (11.05.2026)

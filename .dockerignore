@@ -32,3 +32,9 @@
 .DS_Store
 Thumbs.db
 
+# Website builder is separate from the inference image
+/site
+/_config.yml
+/scripts/pages.ps1
+/scripts/stage_pages.py
+/scripts/serve_pages.py
